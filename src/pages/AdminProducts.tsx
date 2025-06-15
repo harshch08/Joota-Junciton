@@ -39,7 +39,7 @@ const AdminProducts: React.FC = () => {
     try {
       const token = localStorage.getItem('adminToken');
       const response = await fetch(
-        `${API_URL}/api/admin/products?page=${currentPage}&limit=10`,
+        `${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/admin/products?page=${currentPage}&limit=10`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -62,7 +62,7 @@ const AdminProducts: React.FC = () => {
   const handleDeleteProduct = async (productId: string) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${API_URL}/api/admin/products/${productId}`, {
+      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/admin/products/${productId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

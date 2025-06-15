@@ -38,7 +38,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onAu
     if (user) {
       try {
         // Check stock availability
-        const response = await fetch(`${API_URL}/api/products/${product._id || product.id}`);
+        const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/products/${product._id || product.id}`);
         if (response.ok) {
           const productData = await response.json();
           const sizeObj = productData.sizes?.find((s: any) => s.size === size);

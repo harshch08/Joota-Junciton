@@ -72,7 +72,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
-      const response = await fetch('https://jjunction-backend.onrender.com/api/auth/login', {
+      const response = await fetch(process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

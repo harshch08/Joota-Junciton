@@ -55,6 +55,7 @@ const OrdersPage: React.FC = () => {
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [productReviews, setProductReviews] = useState<{[key: string]: boolean}>({});
+  const [userReviews, setUserReviews] = useState<any[]>([]);
 
   // Reset review form state when a new product is selected
   const handleReviewClick = (orderId: string, productId: string) => {
@@ -67,13 +68,14 @@ const OrdersPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!user) {
-      navigate('/', { replace: true });
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login', { replace: true });
       return;
     }
     fetchOrders();
     fetchProductReviews();
-  }, [user, navigate]);
+  }, [navigate]);
 
   const fetchOrders = async () => {
     try {
@@ -81,43 +83,35 @@ const OrdersPage: React.FC = () => {
       setError(null);
       const token = localStorage.getItem('token');
       if (!token) {
-        navigate('/', { replace: true });
+        navigate('/login', { replace: true });
         return;
       }
-      const response = await fetch(`${API_URL}/api/orders`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Fetched orders:', data);
-        
-        // Validate and clean the data
-        const validatedOrders = data.map((order: Order) => ({
-          ...order,
-          items: order.items.map((item: OrderItem) => ({
-            ...item,
-            product: item.product || {
-              _id: 'unknown',
-              name: 'Product Unavailable',
-              price: item.price,
-              images: [],
-              brand: 'Unknown Brand'
-            }
-          }))
-        }));
-        
-        setOrders(validatedOrders);
-      } else if (response.status === 401) {
-        // Handle unauthorized access
-        navigate('/', { replace: true });
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to fetch orders:', response.status, errorData);
-        setError(errorData.message || 'Failed to fetch orders');
-      }
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch orders');
+      const data = await response.json();
+      console.log('Fetched orders:', data);
+      
+      // Validate and clean the data
+      const validatedOrders = data.map((order: Order) => ({
+        ...order,
+        items: order.items.map((item: OrderItem) => ({
+          ...item,
+          product: item.product || {
+            _id: 'unknown',
+            name: 'Product Unavailable',
+            price: item.price,
+            images: [],
+            brand: 'Unknown Brand'
+          }
+        }))
+      }));
+      
+      setOrders(validatedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
       setError('Error loading orders');
@@ -131,20 +125,16 @@ const OrdersPage: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch(`${API_URL}/api/reviews/user`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      // Get all product IDs from orders
+      const productIds = orders.flatMap(order => order.items.map(item => item.product._id));
+      // Fetch all reviews for each product
+      const allReviews = await Promise.all(productIds.map(async (productId) => {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/reviews/product/${productId}`);
+        if (!response.ok) return [];
         const data = await response.json();
-        const reviewsMap = data.reviews.reduce((acc: {[key: string]: boolean}, review: any) => {
-          acc[review.product] = true;
-          return acc;
-        }, {});
-        setProductReviews(reviewsMap);
-      }
+        return data;
+      }));
+      setUserReviews(allReviews.flat());
     } catch (error) {
       console.error('Error fetching user reviews:', error);
     }
@@ -228,19 +218,21 @@ const OrdersPage: React.FC = () => {
     });
   };
 
-  const handleReviewSubmit = async () => {
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!reviewModal) return;
     setReviewLoading(true);
     setReviewError(null);
     try {
       const token = localStorage.getItem('token');
+      if (!token) return;
       const formData = new FormData();
       formData.append('productId', reviewModal.productId);
       formData.append('orderId', reviewModal.orderId);
       formData.append('message', reviewMessage);
       formData.append('rating', reviewRating.toString());
       reviewImages.forEach((file) => formData.append('images', file));
-      const response = await fetch(`${API_URL}/api/reviews`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/reviews`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -356,20 +348,28 @@ const OrdersPage: React.FC = () => {
                       <div key={index} className="flex items-start space-x-3 sm:space-x-4">
                         {item.product ? (
                           <>
-                            <img
-                              src={item.product.images && item.product.images.length > 0 ? 
-                                (item.product.images[0].startsWith('/uploads/products') ? 
-                                  `${API_URL}${item.product.images[0]}` : 
-                                  item.product.images[0]) : 
-                                '/placeholder-image.jpg'}
-                              alt={item.product.name || 'Product'}
-                              className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
-                              onError={(e) => {
-                                e.currentTarget.src = '/placeholder-image.jpg';
-                              }}
-                            />
+                            <div 
+                              onClick={() => navigate(`/product/${item.product._id}`)}
+                              className="cursor-pointer"
+                            >
+                              <img
+                                src={item.product.images && item.product.images.length > 0 ? 
+                                  (item.product.images[0].startsWith('/uploads/products') ? 
+                                    `${API_URL}${item.product.images[0]}` : 
+                                    item.product.images[0]) : 
+                                  '/placeholder-image.jpg'}
+                                alt={item.product.name || 'Product'}
+                                className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0 hover:opacity-90 transition-opacity"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/placeholder-image.jpg';
+                                }}
+                              />
+                            </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-medium text-gray-900 text-sm sm:text-base truncate">
+                              <h3 
+                                onClick={() => navigate(`/product/${item.product._id}`)}
+                                className="font-medium text-gray-900 text-sm sm:text-base truncate cursor-pointer hover:text-gray-700 transition-colors"
+                              >
                                 {item.product.name || 'Product Name Unavailable'}
                               </h3>
                               <p className="text-xs sm:text-sm text-gray-500">

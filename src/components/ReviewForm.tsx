@@ -83,7 +83,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         formData.append('images', image);
       });
 
-      const response = await fetch(ENDPOINTS.REVIEWS, {
+      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/reviews`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

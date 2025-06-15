@@ -136,7 +136,7 @@ const Checkout = () => {
       };
 
       // Create order in MongoDB via API
-      const response = await fetch(`${API_URL}/api/orders`, {
+      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ const Checkout = () => {
 
     try {
       // Create Razorpay order
-      const res = await fetch(`${API_URL}/api/orders/create-razorpay-order`, {
+      const res = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders/create-razorpay-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -295,7 +295,7 @@ const Checkout = () => {
       };
 
       // Create order in database
-      const response = await fetch(`${API_URL}/api/orders`, {
+      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -10,6 +10,15 @@ interface User {
   email: string;
   role: 'user' | 'admin';
   avatar?: string;
+  orders?: Array<{
+    _id: string;
+    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    items: Array<{
+      product: string;
+      quantity: number;
+      size: string;
+    }>;
+  }>;
 }
 
 interface AuthContextType {

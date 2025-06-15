@@ -27,19 +27,6 @@ const Review: React.FC<ReviewProps> = ({ review, onDelete, isOwner }) => {
     <div className="bg-white rounded-lg p-4 shadow-sm">
       <div className="flex items-start justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-            {review.user.avatar ? (
-              <img
-                src={review.user.avatar}
-                alt={review.user.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-600">
-                {review.user.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
           <div>
             <h4 className="font-medium text-gray-900">{review.user.name}</h4>
             <div className="flex items-center space-x-1">
@@ -76,7 +63,7 @@ const Review: React.FC<ReviewProps> = ({ review, onDelete, isOwner }) => {
       {isOwner && onDelete && (
         <button
           onClick={onDelete}
-          className="mt-4 text-sm text-red-600 hover:text-red-700"
+          className="mt-4 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
         >
           Delete Review
         </button>

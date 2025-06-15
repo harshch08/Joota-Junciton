@@ -1,5 +1,5 @@
 // API Configuration
-export const API_URL = import.meta.env.VITE_API_URL || 'https://jjunction-backend.onrender.com';
+export const API_URL = import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com';
 
 // Cloudinary Configuration
 export const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dd6xzdhuk';

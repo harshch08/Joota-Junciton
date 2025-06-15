@@ -10,6 +10,16 @@ router.post('/', protect, reviewUpload.array('images', 5), async (req, res) => {
   try {
     const { productId, orderId, message, rating } = req.body;
     
+    // Check if user has already reviewed this product
+    const existingReview = await Review.findOne({
+      product: productId,
+      user: req.user._id
+    });
+
+    if (existingReview) {
+      return res.status(400).json({ message: 'You have already reviewed this product' });
+    }
+    
     // Get Cloudinary URLs from uploaded files
     const images = req.files ? req.files.map(file => file.path) : [];
     

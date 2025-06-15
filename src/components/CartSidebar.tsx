@@ -45,7 +45,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const handleUpdateQuantity = async (itemId: string, size: string, newQuantity: number) => {
     try {
       // Check stock availability
-      const response = await fetch(`${API_URL}/api/products/${itemId}`);
+      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/products/${itemId}`);
       if (response.ok) {
         const product = await response.json();
         const sizeObj = product.sizes?.find((s: any) => s.size === parseInt(size));

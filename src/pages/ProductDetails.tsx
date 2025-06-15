@@ -39,7 +39,7 @@ const ProductDetails: React.FC = () => {
   const { data: reviews = [], isLoading: reviewsLoading, refetch: refetchReviews } = useQuery({
     queryKey: ['reviews', productId],
     queryFn: async () => {
-      const response = await fetch(`${ENDPOINTS.REVIEWS}/product/${productId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/reviews/product/${productId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch reviews');
       }
@@ -81,7 +81,7 @@ const ProductDetails: React.FC = () => {
       }
 
       addToCart({
-        id: product._id || product.id || '',
+        id: product._id,
         name: product.name,
         price: product.price,
         image: product.images[selectedImage] || product.images[0],
@@ -102,7 +102,7 @@ const ProductDetails: React.FC = () => {
       return productsAPI.getAllProducts({ category: product.category });
     },
     enabled: !!product?.category,
-    select: (products) => products.filter(p => (p._id || p.id) !== (product._id || product.id)).slice(0, 4)
+    select: (products) => products.filter(p => p._id !== product._id).slice(0, 4)
   });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -211,7 +211,7 @@ const ProductDetails: React.FC = () => {
             isOwner={user?._id === review.user._id}
             onDelete={async () => {
               try {
-                const response = await fetch(`${ENDPOINTS.REVIEWS}/${review._id}`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/reviews/${review._id}`, {
                   method: 'DELETE',
                   headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -241,22 +241,8 @@ const ProductDetails: React.FC = () => {
       );
     }
 
-    // Check if user has purchased the product
-    const hasPurchased = user.orders?.some(order => 
-      order.items.some(item => item.product === productId)
-    );
-
-    if (!hasPurchased) {
-      return (
-        <div className="text-center py-8">
-          <p className="text-gray-600">You can only review products you have purchased</p>
-        </div>
-      );
-    }
-
-    // Check if user has already reviewed
+    // Check if user has already reviewed this product
     const hasReviewed = reviews.some(review => review.user._id === user._id);
-
     if (hasReviewed) {
       return (
         <div className="text-center py-8">
@@ -265,18 +251,31 @@ const ProductDetails: React.FC = () => {
       );
     }
 
+    // Check if user has purchased and received the product
+    const hasPurchased = user.orders?.some(order => 
+      order.status === 'delivered' && 
+      order.items.some(item => item.product === productId)
+    );
+    if (!hasPurchased) {
+      return null;
+    }
+
+    // Find the order ID for this product
+    const orderId = user.orders?.find(order => 
+      order.status === 'delivered' && 
+      order.items.some(item => item.product === productId)
+    )?._id || '';
+
     return (
       <div className="bg-white rounded-lg p-6 shadow-sm">
         <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
-        <ReviewForm
-          productId={productId || ''}
-          orderId={user.orders?.find(order => 
-            order.items.some(item => item.product === productId)
-          )?._id || ''}
+        <ReviewForm 
+          productId={productId || ''} 
+          orderId={orderId}
           onReviewSubmitted={() => {
             refetchReviews();
             toast.success('Review submitted successfully');
-          }}
+          }} 
         />
       </div>
     );
@@ -476,8 +475,8 @@ const ProductDetails: React.FC = () => {
             <details className="bg-gray-50 rounded-lg p-4">
               <summary className="font-semibold cursor-pointer">Shipping & Returns</summary>
               <div className="mt-2 text-gray-600 space-y-2 text-sm">
-                <p>Free shipping on all orders over ₹2,000. Standard delivery within 3-5 business days.</p>
-                <p>Easy 30-day returns. If you're not completely satisfied with your purchase, you can return it within 30 days of delivery.</p>
+                <p>Free shipping on all orders over ₹3,000. Standard delivery within 3-5 business days.</p>
+                <p>Easy 7-day returns. If you're not completely satisfied with your purchase, you can return it within 7 days of delivery.</p>
                 <p>
                   <Link to="/terms" className="text-black hover:underline font-medium">
                     View our full shipping and returns policy →
@@ -490,8 +489,8 @@ const ProductDetails: React.FC = () => {
           <div className="hidden md:block">
             <h2 className="text-sm font-semibold text-gray-900">Shipping & Returns</h2>
             <div className="mt-2 space-y-2 text-gray-600 text-sm">
-              <p>Free shipping on all orders over ₹2,000. Standard delivery within 3-5 business days.</p>
-              <p>Easy 30-day returns. If you're not completely satisfied with your purchase, you can return it within 30 days of delivery.</p>
+              <p>Free shipping on all orders over ₹3,000. Standard delivery within 3-5 business days.</p>
+              <p>Easy 7-day returns. If you're not completely satisfied with your purchase, you can return it within 7 days of delivery.</p>
               <p>
                 <Link to="/terms" className="text-black hover:underline font-medium">
                   View our full shipping and returns policy →
@@ -530,8 +529,8 @@ const ProductDetails: React.FC = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {relatedProducts.map((product) => (
-              <div key={product._id || product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <Link to={`/product/${product._id || product.id}`}>
+              <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <Link to={`/product/${product._id}`}>
                   <div className="relative aspect-square">
                     <img
                       src={product.images[0]?.startsWith('/uploads/products') ? `${API_URL}${product.images[0]}` : product.images[0]}

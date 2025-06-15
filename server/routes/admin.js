@@ -10,6 +10,7 @@ const Category = require('../models/Category');
 const Brand = require('../models/Brand');
 const StoreSettings = require('../models/StoreSettings');
 const { uploadProduct } = require('../middleware/upload');
+const { productUpload } = require('../config/cloudinary');
 
 // Admin Dashboard Statistics
 router.get('/dashboard', adminProtect, async (req, res) => {
@@ -197,7 +198,7 @@ router.get('/orders/:id', adminProtect, async (req, res) => {
 });
 
 // Create new product
-router.post('/products', adminProtect, uploadProduct.array('images', 5), async (req, res) => {
+router.post('/products', protect, admin, productUpload.array('images', 5), async (req, res) => {
   try {
     const { name, brand, category, price, description, sizes } = req.body;
     
@@ -206,8 +207,8 @@ router.post('/products', adminProtect, uploadProduct.array('images', 5), async (
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Get uploaded image paths
-    const images = req.files ? req.files.map(file => `/uploads/products/${file.filename}`) : [];
+    // Get Cloudinary URLs from uploaded files
+    const images = req.files ? req.files.map(file => file.path) : [];
 
     // Format sizes array
     const formattedSizes = JSON.parse(sizes).map(size => ({
@@ -233,7 +234,7 @@ router.post('/products', adminProtect, uploadProduct.array('images', 5), async (
 });
 
 // Update product
-router.put('/products/:id', adminProtect, uploadProduct.array('images', 5), async (req, res) => {
+router.put('/products/:id', protect, admin, productUpload.array('images', 5), async (req, res) => {
   try {
     const { name, brand, category, price, description, sizes } = req.body;
     
@@ -247,7 +248,7 @@ router.put('/products/:id', adminProtect, uploadProduct.array('images', 5), asyn
 
     // Handle new images if uploaded
     if (req.files && req.files.length > 0) {
-      updateData.images = req.files.map(file => `/uploads/products/${file.filename}`);
+      updateData.images = req.files.map(file => file.path);
     }
 
     // If sizes are provided, preserve existing stock
