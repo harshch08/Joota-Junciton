@@ -3,6 +3,8 @@ import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, CreditCard } from 'luc
 import { useCart } from '../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../lib/utils';
+import { toast } from 'sonner';
+import { API_URL } from '../config';
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -38,6 +40,37 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
 
   const getTotalPrice = () => {
     return items.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
+  };
+
+  const handleUpdateQuantity = async (itemId: string, size: string, newQuantity: number) => {
+    try {
+      // Check stock availability
+      const response = await fetch(`${API_URL}/api/products/${itemId}`);
+      if (response.ok) {
+        const product = await response.json();
+        const sizeObj = product.sizes?.find((s: any) => s.size === parseInt(size));
+        
+        if (!sizeObj) {
+          toast.error(`Size ${size} is not available for this product.`);
+          return;
+        }
+        
+        if (sizeObj.stock === 0) {
+          toast.error(`Size ${size} is out of stock.`);
+          return;
+        }
+        
+        if (sizeObj.stock < newQuantity) {
+          toast.error(`Sorry, only ${sizeObj.stock} items available in size ${size}.`);
+          return;
+        }
+
+        updateQuantity(itemId, size, newQuantity);
+      }
+    } catch (error) {
+      console.error('Error checking stock availability:', error);
+      toast.error('Error updating quantity. Please try again.');
+    }
   };
 
   if (!isOpen) return null;
@@ -124,7 +157,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                     <div className="flex flex-col items-end space-y-2">
                       <div className="flex items-center space-x-2 bg-white rounded-lg p-1 shadow-sm">
                         <button
-                          onClick={() => updateQuantity(item.id, item.size, (item.quantity || 1) - 1)}
+                          onClick={() => handleUpdateQuantity(item.id, item.size, (item.quantity || 1) - 1)}
                           className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                         >
                           <Minus className="h-3.5 w-3.5" />
@@ -133,7 +166,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                         <span className="text-sm font-medium w-6 text-center">{item.quantity || 1}</span>
                         
                         <button
-                          onClick={() => updateQuantity(item.id, item.size, (item.quantity || 1) + 1)}
+                          onClick={() => handleUpdateQuantity(item.id, item.size, (item.quantity || 1) + 1)}
                           className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                         >
                           <Plus className="h-3.5 w-3.5" />
@@ -141,7 +174,10 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                       </div>
                       
                       <button
-                        onClick={() => removeFromCart(item.id, item.size)}
+                        onClick={() => {
+                          removeFromCart(item.id, item.size);
+                          toast.success('Item removed from cart');
+                        }}
                         className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />

@@ -193,6 +193,14 @@ interface Brand {
   updatedAt: string;
 }
 
+interface Pagination {
+  currentPage: number;
+  totalPages: number;
+  totalProducts: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 // Indian currency formatter
 const formatIndianCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -217,6 +225,8 @@ const AdminDashboard: React.FC = () => {
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -283,6 +293,10 @@ const AdminDashboard: React.FC = () => {
     fetchStoreSettings();
   }, []);
 
+  useEffect(() => {
+    fetchProducts();
+  }, [currentPage]);
+
   // Initialize local inventory when modal opens
   useEffect(() => {
     if (managingInventory) {
@@ -320,7 +334,7 @@ const AdminDashboard: React.FC = () => {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/products`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/products?page=${currentPage}&limit=10`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -329,6 +343,7 @@ const AdminDashboard: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setProducts(data.products || []);
+        setPagination(data.pagination);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -1407,6 +1422,52 @@ const AdminDashboard: React.FC = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  {pagination && (
+                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4">
+                      <div className="flex-1 flex justify-between sm:hidden">
+                        <button
+                          onClick={() => setCurrentPage(currentPage - 1)}
+                          disabled={!pagination.hasPrev}
+                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(currentPage + 1)}
+                          disabled={!pagination.hasNext}
+                          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                        </button>
+                      </div>
+                      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm text-gray-700">
+                            Showing page <span className="font-medium">{pagination.currentPage}</span> of{' '}
+                            <span className="font-medium">{pagination.totalPages}</span>
+                          </p>
+                        </div>
+                        <div>
+                          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                            <button
+                              onClick={() => setCurrentPage(currentPage - 1)}
+                              disabled={!pagination.hasPrev}
+                              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Previous
+                            </button>
+                            <button
+                              onClick={() => setCurrentPage(currentPage + 1)}
+                              disabled={!pagination.hasNext}
+                              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Next
+                            </button>
+                          </nav>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

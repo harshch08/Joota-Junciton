@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { productsAPI } from '../services/api';
@@ -10,30 +10,41 @@ import { ChevronRight, Home, ShoppingCart, BadgeCheck, Tag, Layers, Star, Packag
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import ProductCard from '../components/ProductCard';
+import Review from '../components/Review';
+import ReviewForm from '../components/ReviewForm';
 import { motion } from 'framer-motion';
-import { API_URL } from '../config';
+import { API_URL, ENDPOINTS } from '../config';
 
 const ProductDetails: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, items } = useCart();
   const { user } = useAuth();
   const [selectedSize, setSelectedSize] = useState<string>('');
-  const [selectedImage, setSelectedImage] = useState<number>(0);
+  const [selectedImage, setSelectedImage] = useState(0);
   const [addToCartAnim, setAddToCartAnim] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const imageRef = useRef<HTMLDivElement>(null);
 
   const { data: product, isLoading, error } = useQuery<Product>({
     queryKey: ['product', productId],
     queryFn: () => productsAPI.getProductById(productId || '')
   });
 
-  const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
+  const { data: reviews = [], isLoading: reviewsLoading, refetch: refetchReviews } = useQuery({
     queryKey: ['reviews', productId],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/reviews/${productId}`);
+      const response = await fetch(`${ENDPOINTS.REVIEWS}/product/${productId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch reviews');
+      }
       const data = await response.json();
-      return data.reviews || [];
+      return data;
     },
     enabled: !!productId
   });
@@ -48,6 +59,27 @@ const ProductDetails: React.FC = () => {
       return;
     }
     if (product) {
+      // Check stock availability
+      const sizeObj = product.sizes.find(s => s.size.toString() === selectedSize);
+      if (!sizeObj) {
+        toast.error('Selected size is not available');
+        return;
+      }
+      if (sizeObj.stock === 0) {
+        toast.error('This size is out of stock');
+        return;
+      }
+
+      // Check if adding one more would exceed stock
+      const currentCartItem = items.find(
+        item => item.id === product._id && item.size === selectedSize
+      );
+      const currentQuantity = currentCartItem?.quantity || 0;
+      if (currentQuantity + 1 > sizeObj.stock) {
+        toast.error(`Only ${sizeObj.stock} items available in size ${selectedSize}`);
+        return;
+      }
+
       addToCart({
         id: product._id || product.id || '',
         name: product.name,
@@ -73,20 +105,181 @@ const ProductDetails: React.FC = () => {
     select: (products) => products.filter(p => (p._id || p.id) !== (product._id || product.id)).slice(0, 4)
   });
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageRef.current || !isZoomed) return;
+
+    if (isDragging) {
+      const deltaX = dragStart.x - e.clientX;
+      const deltaY = dragStart.y - e.clientY;
+      setMousePosition(prev => ({
+        x: Math.max(0, Math.min(100, prev.x + (deltaX / imageRef.current!.offsetWidth) * 100)),
+        y: Math.max(0, Math.min(100, prev.y + (deltaY / imageRef.current!.offsetHeight) * 100))
+      }));
+      setDragStart({ x: e.clientX, y: e.clientY });
+    } else {
+      const { left, top, width, height } = imageRef.current.getBoundingClientRect();
+      const x = ((e.clientX - left) / width) * 100;
+      const y = ((e.clientY - top) / height) * 100;
+      setMousePosition({ x, y });
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isZoomed) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Add touch event handlers
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (isZoomed && e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!imageRef.current || !isZoomed || !isDragging || e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const deltaX = dragStart.x - touch.clientX;
+    const deltaY = dragStart.y - touch.clientY;
+    
+    setMousePosition(prev => ({
+      x: Math.max(0, Math.min(100, prev.x + (deltaX / imageRef.current!.offsetWidth) * 100)),
+      y: Math.max(0, Math.min(100, prev.y + (deltaY / imageRef.current!.offsetHeight) * 100))
+    }));
+    setDragStart({ x: touch.clientX, y: touch.clientY });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
   const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.2, 2));
+    setZoomLevel(prev => Math.min(prev + 0.5, 3));
+    setIsZoomed(true);
   };
 
   const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 0.2, 1));
-  };
-
-  const handleNextImage = () => {
-    setSelectedImage(prev => (prev + 1) % product.images.length);
+    setZoomLevel(prev => Math.max(prev - 0.5, 1));
+    if (zoomLevel <= 1.5) {
+      setIsZoomed(false);
+    }
   };
 
   const handlePrevImage = () => {
-    setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length);
+    setSelectedImage(prev => (prev === 0 ? product.images.length - 1 : prev - 1));
+    setIsZoomed(false);
+    setZoomLevel(1);
+  };
+
+  const handleNextImage = () => {
+    setSelectedImage(prev => (prev === product.images.length - 1 ? 0 : prev + 1));
+    setIsZoomed(false);
+    setZoomLevel(1);
+  };
+
+  const renderReviews = () => {
+    if (reviewsLoading) {
+      return (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      );
+    }
+
+    if (reviews.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          No reviews yet. Be the first to review this product!
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {reviews.map((review) => (
+          <Review
+            key={review._id}
+            review={review}
+            isOwner={user?._id === review.user._id}
+            onDelete={async () => {
+              try {
+                const response = await fetch(`${ENDPOINTS.REVIEWS}/${review._id}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                  }
+                });
+                if (!response.ok) throw new Error('Failed to delete review');
+                toast.success('Review deleted successfully');
+                refetchReviews();
+              } catch (error) {
+                console.error('Error deleting review:', error);
+                toast.error('Failed to delete review');
+              }
+            }}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const renderReviewForm = () => {
+    if (!user) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-600 mb-4">Please login to write a review</p>
+          <Button onClick={() => navigate('/login')}>Login</Button>
+        </div>
+      );
+    }
+
+    // Check if user has purchased the product
+    const hasPurchased = user.orders?.some(order => 
+      order.items.some(item => item.product === productId)
+    );
+
+    if (!hasPurchased) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-600">You can only review products you have purchased</p>
+        </div>
+      );
+    }
+
+    // Check if user has already reviewed
+    const hasReviewed = reviews.some(review => review.user._id === user._id);
+
+    if (hasReviewed) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-600">You have already reviewed this product</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white rounded-lg p-6 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
+        <ReviewForm
+          productId={productId || ''}
+          orderId={user.orders?.find(order => 
+            order.items.some(item => item.product === productId)
+          )?._id || ''}
+          onReviewSubmitted={() => {
+            refetchReviews();
+            toast.success('Review submitted successfully');
+          }}
+        />
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -147,12 +340,36 @@ const ProductDetails: React.FC = () => {
         {/* IMAGE GALLERY */}
         <div className="flex flex-col gap-4 items-center w-full">
           {/* Main Image */}
-          <div className="relative w-full h-[300px] md:h-[400px] bg-gray-100 rounded-lg overflow-hidden">
-            <img
-              src={product.images[selectedImage]?.startsWith('/uploads/products') ? `${API_URL}${product.images[selectedImage]}` : product.images[selectedImage]}
-              alt={product.name}
-              className="w-full h-full object-contain"
-            />
+          <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden">
+            <div
+              ref={imageRef}
+              className="relative aspect-square overflow-hidden rounded-lg bg-gray-100"
+              onMouseMove={handleMouseMove}
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <img
+                src={product.images[selectedImage]?.startsWith('/uploads/products') ? `${API_URL}${product.images[selectedImage]}` : product.images[selectedImage]}
+                alt={product.name}
+                className={`h-full w-full object-contain transition-transform duration-200 ${
+                  isZoomed ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-zoom-in'
+                }`}
+                style={{
+                  transform: isZoomed ? `scale(${zoomLevel})` : 'scale(1)',
+                  transformOrigin: isZoomed ? `${mousePosition.x}% ${mousePosition.y}%` : 'center',
+                }}
+              />
+              {product.originalPrice && (
+                <div className="absolute left-4 top-4 rounded-full bg-red-500 px-3 py-1 text-sm font-medium text-white">
+                  Sale
+                </div>
+              )}
+            </div>
+            
+            {/* Image Navigation Buttons */}
             {product.images.length > 1 && (
               <>
                 <button
@@ -173,21 +390,43 @@ const ProductDetails: React.FC = () => {
                 </button>
               </>
             )}
-          </div>
 
-          {/* Image Count Indicator */}
-          {product.images.length > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-4">
-              {product.images.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === selectedImage ? 'bg-primary w-4' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
+            {/* Zoom Controls */}
+            <div className="absolute bottom-4 right-4 flex gap-2">
+              <button
+                onClick={handleZoomOut}
+                className="rounded-full bg-white/80 p-2 shadow-lg backdrop-blur-sm transition-all hover:bg-white"
+                title="Zoom Out"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <button
+                onClick={handleZoomIn}
+                className="rounded-full bg-white/80 p-2 shadow-lg backdrop-blur-sm transition-all hover:bg-white"
+                title="Zoom In"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+              </button>
             </div>
-          )}
+
+            {/* Image Count Indicator */}
+            {product.images.length > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-4">
+                {product.images.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === selectedImage ? 'bg-primary w-4' : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         {/* PRODUCT INFO */}
         <div className="space-y-8 bg-white rounded-2xl shadow-lg p-6 md:p-10 border border-gray-100">
@@ -197,11 +436,9 @@ const ProductDetails: React.FC = () => {
             </h1>
             <div className="flex items-center gap-3 mt-1">
               <span className="text-2xl md:text-3xl font-bold text-black">₹{product.price}</span>
-              {product.rating && (
-                <span className="flex items-center gap-1 text-yellow-500 font-semibold text-lg">
-                  <Star className="h-5 w-5" /> {product.rating.toFixed(1)}
-                </span>
-              )}
+              <span className="flex items-center gap-1 text-yellow-500 font-semibold text-lg">
+                <Star className="h-5 w-5" /> {product.rating ? product.rating.toFixed(1) : 'N/A'}
+              </span>
             </div>
             <span className="text-gray-500 text-base">by <span className="font-semibold text-gray-700">{product.brand}</span></span>
           </div>
@@ -276,54 +513,13 @@ const ProductDetails: React.FC = () => {
         <p className="text-gray-700 leading-relaxed text-lg">{product.description}</p>
       </div>
       {/* REVIEWS */}
-      <div className="mt-12 bg-white rounded-2xl shadow p-8 border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2"><Star className="h-6 w-6 text-yellow-400" /> Product Reviews</h2>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h2 className="text-2xl font-bold mb-8">Customer Reviews</h2>
+        {renderReviewForm()}
+        <div className="mt-8">
+          {renderReviews()}
         </div>
-        {reviewsLoading ? (
-          <div>Loading reviews...</div>
-        ) : !reviewsData || reviewsData.length === 0 ? (
-          <div className="text-gray-500">No reviews yet.</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {reviewsData.map((review, idx) => (
-              <div key={idx} className="bg-gray-50 rounded-xl p-6 shadow border border-gray-100 flex flex-col gap-2">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700 text-lg">
-                    {review.user?.avatar ? (
-                      <img src={review.user.avatar} alt="avatar" className="w-full h-full object-cover rounded-full" />
-                    ) : (
-                      (review.user?.name || 'A')[0].toUpperCase()
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-900">{review.user?.name || 'Anonymous'}</div>
-                    <div className="flex items-center text-yellow-500">
-                      {[1,2,3,4,5].map(star => (
-                        <span key={star}>{review.rating >= star ? '★' : '☆'}</span>
-                      ))}
-                      <span className="ml-2 text-xs text-gray-500">{new Date(review.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-gray-700 mb-2">{review.message}</div>
-                {review.images && review.images.length > 0 && (
-                  <div className="flex gap-2 flex-wrap mt-2">
-                    {review.images.map((img: string, i: number) => (
-                      <img
-                        key={i}
-                        src={img.startsWith('/uploads/reviews') ? `${import.meta.env.VITE_API_URL}${img}` : img}
-                        alt="review"
-                        className="w-20 h-20 object-cover rounded-lg border"
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      </section>
       {/* RELATED PRODUCTS */}
       <div className="mt-16">
         <h2 className="text-2xl font-bold mb-6">Related Products</h2>

@@ -9,8 +9,13 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  build: {
+    outDir: 'public_html',
+    assetsDir: 'assets',
+    emptyOutDir: true,
+  },
   define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'http://localhost:5001'),
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://jjunction-backend.onrender.com'),
   },
   plugins: [
     react(),

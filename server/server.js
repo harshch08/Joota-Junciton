@@ -154,41 +154,45 @@ app.use('/api/reviews', reviewsRouter);
 app.use('/uploads/reviews', express.static('uploads/reviews'));
 app.use('/uploads/products', express.static('uploads/products'));
 
+// Get the absolute path to public_html
+const publicPath = path.resolve(__dirname, '../public_html');
+console.log('Public directory path:', publicPath);
+
+// Serve static files from the public_html directory
+app.use(express.static(publicPath));
+
 // Basic route for testing
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!' });
 });
 
-// Error handling
-app.use((err, req, res, next) => {
-  console.error('Global error handler:', {
-    message: err.message,
-    stack: err.stack,
-    name: err.name,
-    code: err.code
-  });
+// Catch-all route to serve index.html for all non-API routes
+app.get('*', (req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
   
-  // Check if it's a MongoDB error
-  if (err.name === 'MongoError' || err.name === 'MongoServerError') {
-    return res.status(500).json({
-      message: 'Database error',
-      error: err.message,
-      code: err.code
-    });
-  }
+  const indexPath = path.join(publicPath, 'index.html');
+  console.log('Attempting to serve:', indexPath);
+  
+  // For all other routes, serve the index.html file
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error('Error sending index.html:', err);
+      console.error('Requested path:', req.path);
+      console.error('Full URL:', req.originalUrl);
+      res.status(500).send('Error loading page');
+    }
+  });
+});
 
-  // Check if it's a Mongoose validation error
-  if (err.name === 'ValidationError') {
-    return res.status(400).json({
-      message: 'Validation error',
-      error: err.message
-    });
-  }
-
-  // Default error
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
   res.status(500).json({
-    message: 'Something went wrong!',
-    error: err.message
+    error: 'Something went wrong!',
+    message: err.message
   });
 });
 

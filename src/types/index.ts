@@ -1,24 +1,74 @@
-export interface Product {
-  id?: string;
-  _id?: string;
+export interface User {
+  _id: string;
   name: string;
+  email: string;
+  role: 'user' | 'admin';
+  avatar?: string;
+  orders?: Array<{
+    _id: string;
+    items: Array<{
+      product: string;
+      quantity: number;
+      size: string;
+    }>;
+  }>;
+}
+
+export interface Product {
+  _id: string;
+  name: string;
+  brand: string;
+  category: string;
   price: number;
   originalPrice?: number;
-  images: string[];
-  brand: string;
   description: string;
-  features?: string[];
+  images: string[];
   sizes: Array<{
     size: number;
     stock: number;
   }>;
-  category?: string;
-  rating?: number;
-  reviews?: any[];
-  featured?: boolean;
-  createdAt?: string;
-  __v?: number;
-} 
+  featured: boolean;
+  rating: number;
+  reviews: Array<{
+    user: User;
+    rating: number;
+    comment: string;
+    createdAt: string;
+  }>;
+  createdAt: string;
+}
+
+export interface Review {
+  _id: string;
+  product: string;
+  user: User;
+  order: string;
+  images: string[];
+  message: string;
+  rating: number;
+  createdAt: string;
+}
+
+export interface Order {
+  _id: string;
+  user: string;
+  items: Array<{
+    product: string;
+    quantity: number;
+    size: string;
+  }>;
+  totalAmount: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  shippingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  paymentStatus: 'pending' | 'completed' | 'failed';
+  createdAt: string;
+}
 
 export interface Category {
   _id: string;

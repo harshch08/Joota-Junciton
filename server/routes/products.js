@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const { protect } = require('../middleware/auth');
+const { protect, admin } = require('../middleware/auth');
 const mongoose = require('mongoose');
 const Brand = require('../models/Brand');
+const { productUpload } = require('../config/cloudinary');
 
 // Debug middleware
 router.use((req, res, next) => {
@@ -108,38 +109,66 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create product (admin only)
-router.post('/', protect, async (req, res) => {
+// Create a new product (admin only)
+router.post('/', protect, admin, productUpload.array('images', 5), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
+    const { name, brand, category, price, description, sizes, featured } = req.body;
+    
+    // Get Cloudinary URLs from uploaded files
+    const images = req.files.map(file => file.path);
+    
+    const product = new Product({
+      name,
+      brand,
+      category,
+      price,
+      description,
+      images,
+      sizes: JSON.parse(sizes),
+      featured: featured === 'true'
+    });
 
-    const product = await Product.create(req.body);
+    await product.save();
     res.status(201).json(product);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error creating product:', error);
+    res.status(500).json({ message: 'Error creating product', error: error.message });
   }
 });
 
-// Update product (admin only)
-router.put('/:id', protect, async (req, res) => {
+// Update a product (admin only)
+router.put('/:id', protect, admin, productUpload.array('images', 5), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized' });
+    const { name, brand, category, price, description, sizes, featured } = req.body;
+    const updateData = {
+      name,
+      brand,
+      category,
+      price,
+      description,
+      sizes: JSON.parse(sizes),
+      featured: featured === 'true'
+    };
+
+    // If new images are uploaded, update the images array
+    if (req.files && req.files.length > 0) {
+      updateData.images = req.files.map(file => file.path);
     }
 
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true }
     );
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
     res.json(product);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error updating product:', error);
+    res.status(500).json({ message: 'Error updating product', error: error.message });
   }
 });
 

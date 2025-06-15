@@ -71,53 +71,7 @@ router.post('/', protect, async (req, res) => {
       });
     }
 
-    // Validate stock availability and update inventory
-    const stockValidationErrors = [];
-    const inventoryUpdates = [];
-
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      if (!product) {
-        return res.status(404).json({ 
-          message: `Product not found: ${item.product}` 
-        });
-      }
-
-      // Find the specific size in the product
-      const sizeObj = product.sizes.find(s => s.size === item.size);
-      if (!sizeObj) {
-        return res.status(400).json({ 
-          message: `Size ${item.size} not available for product: ${product.name}` 
-        });
-      }
-
-      // Check if enough stock is available
-      if (sizeObj.stock < item.quantity) {
-        stockValidationErrors.push({
-          product: product.name,
-          size: item.size,
-          requested: item.quantity,
-          available: sizeObj.stock
-        });
-      } else {
-        // Prepare inventory update
-        inventoryUpdates.push({
-          productId: product._id,
-          size: item.size,
-          newStock: sizeObj.stock - item.quantity
-        });
-      }
-    }
-
-    // If there are stock validation errors, return them
-    if (stockValidationErrors.length > 0) {
-      return res.status(400).json({
-        message: 'Insufficient stock for some items',
-        stockErrors: stockValidationErrors
-      });
-    }
-
-    // Create the order
+    // Create the order without updating stock
     const order = await Order.create({
       user: req.user.id,
       items,
@@ -127,22 +81,6 @@ router.post('/', protect, async (req, res) => {
       shippingPrice: shippingPrice || 0,
       status: 'pending'
     });
-
-    // Update inventory for all items
-    for (const update of inventoryUpdates) {
-      await Product.findByIdAndUpdate(
-        update.productId,
-        {
-          $set: {
-            [`sizes.$[elem].stock`]: update.newStock
-          }
-        },
-        {
-          arrayFilters: [{ 'elem.size': update.size }],
-          new: true
-        }
-      );
-    }
 
     // Populate product details
     await order.populate('items.product', 'name price images brand description');
@@ -177,15 +115,72 @@ router.put('/:id/status', protect, async (req, res) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
-    const order = await Order.findOneAndUpdate(
-      { _id: req.params.id, user: req.user.id },
-      { status },
-      { new: true }
-    ).populate('items.product', 'name price images brand description');
-
+    const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
+
+    // If order is being cancelled, restore stock
+    if (status === 'cancelled' && order.status !== 'cancelled') {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(
+          item.product,
+          {
+            $inc: {
+              [`sizes.$[elem].stock`]: item.quantity
+            }
+          },
+          {
+            arrayFilters: [{ 'elem.size': item.size }],
+            new: true
+          }
+        );
+      }
+    }
+    // If order is being delivered, reduce stock
+    else if (status === 'delivered' && order.status !== 'delivered') {
+      for (const item of order.items) {
+        const product = await Product.findById(item.product);
+        if (!product) {
+          return res.status(404).json({ 
+            message: `Product not found: ${item.product}` 
+          });
+        }
+
+        const sizeObj = product.sizes.find(s => s.size === item.size);
+        if (!sizeObj) {
+          return res.status(400).json({ 
+            message: `Size ${item.size} not available for product: ${product.name}` 
+          });
+        }
+
+        if (sizeObj.stock < item.quantity) {
+          return res.status(400).json({
+            message: `Insufficient stock for ${product.name} (Size ${item.size})`
+          });
+        }
+
+        await Product.findByIdAndUpdate(
+          item.product,
+          {
+            $inc: {
+              [`sizes.$[elem].stock`]: -item.quantity
+            }
+          },
+          {
+            arrayFilters: [{ 'elem.size': item.size }],
+            new: true
+          }
+        );
+      }
+    }
+
+    // Update order status
+    order.status = status;
+    await order.save();
+
+    // Populate product details for response
+    await order.populate('items.product', 'name price images brand description');
 
     console.log('Order status updated successfully:', order._id);
     res.json(order);

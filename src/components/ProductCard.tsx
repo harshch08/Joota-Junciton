@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { API_URL } from '../config';
 
 // Indian currency formatter
 const formatIndianCurrency = (amount: number) => {
@@ -29,45 +31,43 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onAu
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    if (!user) {
-      onAuthRequired();
-      return;
-    }
-
-    if (!selectedSize) {
-      setShowSizeSelector(true);
-      return;
-    }
-
-    addToCart({
-      id: product._id || product.id || '',
-      name: product.name,
-      price: product.price,
-      image: product.images[0],
-      size: selectedSize,
-      brand: product.brand,
-    });
-
-    setSelectedSize('');
-    setShowSizeSelector(false);
-  };
-
-  const handleSizeSelect = (size: number) => {
+  const handleSizeSelect = async (size: number) => {
     setSelectedSize(size.toString());
     setShowSizeSelector(false);
     
     if (user) {
-      addToCart({
-        id: product._id || product.id || '',
-        name: product.name,
-        price: product.price,
-        image: product.images[0],
-        size: size.toString(),
-        brand: product.brand,
-      });
+      try {
+        // Check stock availability
+        const response = await fetch(`${API_URL}/api/products/${product._id || product.id}`);
+        if (response.ok) {
+          const productData = await response.json();
+          const sizeObj = productData.sizes?.find((s: any) => s.size === size);
+          
+          if (!sizeObj) {
+            toast.error(`Size ${size} is not available for this product.`);
+            return;
+          }
+          
+          if (sizeObj.stock === 0) {
+            toast.error(`Size ${size} is out of stock.`);
+            return;
+          }
+
+          addToCart({
+            id: product._id || product.id || '',
+            name: product.name,
+            price: product.price,
+            image: product.images[0],
+            size: size.toString(),
+            brand: product.brand,
+          });
+
+          toast.success('Added to cart successfully!');
+        }
+      } catch (error) {
+        console.error('Error checking stock availability:', error);
+        toast.error('Error adding to cart. Please try again.');
+      }
     }
   };
 
@@ -92,11 +92,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onAu
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-gray-50">
         <img
-          src={product.images[0] && product.images[0].startsWith('/uploads/products') ? `http://localhost:5001${product.images[0]}` : product.images[0]}
+          src={product.images[0]}
           alt={product.name}
           className={`w-full h-full object-cover transition-transform duration-500 ${
             isHovered ? 'scale-110' : 'scale-100'
           }`}
+          loading="lazy"
         />
         
         {/* Sale Badge */}
@@ -114,24 +115,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onAu
             </span>
           </div>
         )}
-
-        {/* Quick Actions */}
-        <div className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent transform transition-transform duration-300 ${
-          isHovered ? 'translate-y-0' : 'translate-y-full'
-        }`}>
-          <button
-            onClick={handleAddToCart}
-            disabled={!hasAvailableStock()}
-            className={`w-full py-2 px-4 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
-              hasAvailableStock()
-                ? 'bg-white text-black hover:bg-gray-100'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            <ShoppingCart className="h-4 w-4" />
-            <span>{hasAvailableStock() ? 'Add to Cart' : 'Out of Stock'}</span>
-          </button>
-        </div>
       </div>
 
       {/* Product Info */}
