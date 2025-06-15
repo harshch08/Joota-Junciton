@@ -10,7 +10,7 @@ const reviewSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Add a compound index to ensure one review per product per user
-reviewSchema.index({ product: 1, user: 1 }, { unique: true });
+// Remove the unique index to allow multiple reviews per user per product
+// reviewSchema.index({ product: 1, user: 1 }, { unique: true });
 
 module.exports = mongoose.model('Review', reviewSchema); 
