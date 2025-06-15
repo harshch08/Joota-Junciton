@@ -76,7 +76,7 @@ const BrandsPage: React.FC<BrandsPageProps> = ({ isNavigation = false }) => {
       'Skechers': 'skechers.png',
       'Crocs': 'crocs.png',
       'Asics': 'asics.png',
-      'Louis Vuitton': 'louis-vuitton.png',
+      'Louis Vuitton': 'Louis-Vuitton.png',
       'Puma': 'puma.png',
       'Reebok': 'reebok.png'
     };
