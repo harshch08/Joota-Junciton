@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { adminProtect } = require('../middleware/admin');
-const { protect } = require('../middleware/auth');
+const { protect, admin } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Product = require('../models/Product');
@@ -9,11 +9,10 @@ const Order = require('../models/Order');
 const Category = require('../models/Category');
 const Brand = require('../models/Brand');
 const StoreSettings = require('../models/StoreSettings');
-const { uploadProduct } = require('../middleware/upload');
 const { productUpload } = require('../config/cloudinary');
 
 // Admin Dashboard Statistics
-router.get('/dashboard', adminProtect, async (req, res) => {
+router.get('/dashboard', protect, admin, async (req, res) => {
   try {
     console.log('Fetching dashboard data for admin:', req.user.email);
 
