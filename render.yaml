@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: joota-junction
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dd6xzdhuk
+      - key: CLOUDINARY_API_KEY
+        value: 788678742282591
+      - key: CLOUDINARY_API_SECRET
+        value: HYRNiTdOQF1szroGCDkk5wmqYh0
+      - key: CLOUDINARY_UPLOAD_PRESET
+        value: Joota-Junction 

@@ -154,12 +154,8 @@ app.use('/api/reviews', reviewsRouter);
 app.use('/uploads/reviews', express.static('uploads/reviews'));
 app.use('/uploads/products', express.static('uploads/products'));
 
-// Get the absolute path to public_html
-const publicPath = path.resolve(__dirname, '../public_html');
-console.log('Public directory path:', publicPath);
-
-// Serve static files from the public_html directory
-app.use(express.static(publicPath));
+// Serve static files from the root directory
+app.use(express.static(path.join(__dirname, '..')));
 
 // Basic route for testing
 app.get('/api/test', (req, res) => {
@@ -173,7 +169,7 @@ app.get('*', (req, res, next) => {
     return next();
   }
   
-  const indexPath = path.join(publicPath, 'index.html');
+  const indexPath = path.join(__dirname, '..', 'index.html');
   console.log('Attempting to serve:', indexPath);
   
   // For all other routes, serve the index.html file
