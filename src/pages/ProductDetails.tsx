@@ -6,7 +6,7 @@ import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage } from '../components/ui/breadcrumb';
-import { ChevronRight, Home, ShoppingCart, BadgeCheck, Tag, Layers, Star, Package, User, ZoomIn, ZoomOut, ChevronLeft } from 'lucide-react';
+import { ChevronRight, Home, ShoppingCart, BadgeCheck, Tag, Layers, Star, Package, User, ZoomIn, ZoomOut, ChevronLeft, Share2, Copy, MessageCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import ProductCard from '../components/ProductCard';
@@ -30,6 +30,8 @@ const ProductDetails: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const imageRef = useRef<HTMLDivElement>(null);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
 
   const { data: product, isLoading, error } = useQuery<Product>({
     queryKey: ['product', productId],
@@ -233,12 +235,7 @@ const ProductDetails: React.FC = () => {
 
   const renderReviewForm = () => {
     if (!user) {
-      return (
-        <div className="text-center py-8">
-          <p className="text-gray-600 mb-4">Please login to write a review</p>
-          <Button onClick={() => navigate('/login')}>Login</Button>
-        </div>
-      );
+      return null;
     }
 
     // Check if user has already reviewed this product
@@ -279,6 +276,36 @@ const ProductDetails: React.FC = () => {
         />
       </div>
     );
+  };
+
+  // Close share menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target as Node)) {
+        setShowShareMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleShare = () => {
+    setShowShareMenu(!showShareMenu);
+  };
+
+  const handleCopyLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard!');
+    setShowShareMenu(false);
+  };
+
+  const handleShareWhatsApp = () => {
+    const url = window.location.href;
+    const text = `Check out this product: ${product?.name}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+    setShowShareMenu(false);
   };
 
   if (isLoading) {
@@ -366,6 +393,45 @@ const ProductDetails: React.FC = () => {
                   Sale
                 </div>
               )}
+              
+              {/* Share Button */}
+              <div className="absolute top-4 right-4">
+                <button
+                  onClick={handleShare}
+                  className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+                  title="Share"
+                >
+                  <Share2 className="h-5 w-5 text-gray-700" />
+                </button>
+                
+                {/* Share Menu */}
+                {showShareMenu && (
+                  <div
+                    ref={shareMenuRef}
+                    className="absolute right-0 top-12 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50"
+                  >
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">Share this product</p>
+                    </div>
+                    <div className="py-2">
+                      <button
+                        onClick={handleCopyLink}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy Link
+                      </button>
+                      <button
+                        onClick={handleShareWhatsApp}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <MessageCircle className="h-4 w-4 text-green-600" />
+                        Share on WhatsApp
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
             {/* Image Navigation Buttons */}
@@ -411,30 +477,46 @@ const ProductDetails: React.FC = () => {
                 </svg>
               </button>
             </div>
-
-            {/* Image Count Indicator */}
-            {product.images.length > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-4">
-                {product.images.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      index === selectedImage ? 'bg-primary w-4' : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
           </div>
+
+          {/* Image Count Indicator */}
+          {product.images.length > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-4">
+              {product.images.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === selectedImage ? 'bg-primary w-4' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
         {/* PRODUCT INFO */}
         <div className="space-y-8 bg-white rounded-2xl shadow-lg p-6 md:p-10 border border-gray-100">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight flex items-center gap-2">
-              {product.name}
-            </h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{product.name}</h1>
             <div className="flex items-center gap-3 mt-1">
-              <span className="text-2xl md:text-3xl font-bold text-black">₹{product.price}</span>
+              <div className="flex items-center gap-4">
+                {product.discountedPrice ? (
+                  <>
+                    <span className="text-3xl font-bold text-gray-900">
+                      ₹{product.discountedPrice.toLocaleString('en-IN')}
+                    </span>
+                    <span className="text-xl text-gray-500 line-through">
+                      ₹{product.price.toLocaleString('en-IN')}
+                    </span>
+                    <span className="text-sm text-green-600 font-medium">
+                      {Math.round(((product.price - product.discountedPrice) / product.price) * 100)}% OFF
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-3xl font-bold text-gray-900">
+                    ₹{product.price.toLocaleString('en-IN')}
+                  </span>
+                )}
+              </div>
               <span className="flex items-center gap-1 text-yellow-500 font-semibold text-lg">
                 <Star className="h-5 w-5" /> {product.rating ? product.rating.toFixed(1) : 'N/A'}
               </span>
@@ -521,7 +603,16 @@ const ProductDetails: React.FC = () => {
       </section>
       {/* RELATED PRODUCTS */}
       <div className="mt-16">
-        <h2 className="text-2xl font-bold mb-6">Related Products</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Related Products</h2>
+          <Link
+            to="/brands"
+            className="text-black hover:text-gray-700 font-medium flex items-center gap-2 transition-colors"
+          >
+            View All Products
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
         {relatedLoading ? (
           <div className="text-center py-8">Loading related products...</div>
         ) : relatedProducts.length === 0 ? (

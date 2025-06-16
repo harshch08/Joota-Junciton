@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
     console.log('Request headers:', req.headers);
     console.log('Request query:', req.query);
     
-    const { category, brand, brandId, minPrice, maxPrice, search } = req.query;
+    const { category, brand, brandId, minPrice, maxPrice, search, sortBy } = req.query;
     let query = {};
 
     // Apply filters
@@ -69,7 +69,27 @@ router.get('/', async (req, res) => {
     console.log('MongoDB Query:', JSON.stringify(query, null, 2));
     console.log('MongoDB Connection State:', mongoose.connection.readyState);
     
-    const products = await Product.find(query);
+    // Determine sort options
+    let sortOptions = {};
+    if (sortBy) {
+      switch (sortBy) {
+        case 'price-low':
+          sortOptions = { price: 1 };
+          break;
+        case 'price-high':
+          sortOptions = { price: -1 };
+          break;
+        case 'newest':
+        default:
+          sortOptions = { createdAt: -1 };
+          break;
+      }
+    } else {
+      sortOptions = { createdAt: -1 }; // Default sort by newest
+    }
+    
+    const products = await Product.find(query).sort(sortOptions);
+    
     console.log(`Found ${products.length} products`);
     
     // Log the first product as a sample
@@ -112,7 +132,7 @@ router.get('/:id', async (req, res) => {
 // Create a new product (admin only)
 router.post('/', protect, admin, productUpload.array('images', 5), async (req, res) => {
   try {
-    const { name, brand, category, price, description, sizes, featured } = req.body;
+    const { name, brand, category, price, discountedPrice, description, sizes, featured } = req.body;
     
     // Get Cloudinary URLs from uploaded files
     const images = req.files.map(file => file.path);
@@ -122,6 +142,7 @@ router.post('/', protect, admin, productUpload.array('images', 5), async (req, r
       brand,
       category,
       price,
+      discountedPrice: discountedPrice || undefined,
       description,
       images,
       sizes: JSON.parse(sizes),
@@ -139,12 +160,13 @@ router.post('/', protect, admin, productUpload.array('images', 5), async (req, r
 // Update a product (admin only)
 router.put('/:id', protect, admin, productUpload.array('images', 5), async (req, res) => {
   try {
-    const { name, brand, category, price, description, sizes, featured } = req.body;
+    const { name, brand, category, price, discountedPrice, description, sizes, featured } = req.body;
     const updateData = {
       name,
       brand,
       category,
       price,
+      discountedPrice: discountedPrice || undefined,
       description,
       sizes: JSON.parse(sizes),
       featured: featured === 'true'

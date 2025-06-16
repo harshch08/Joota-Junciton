@@ -78,6 +78,7 @@ interface Product {
   name: string;
   brand: string;
   price: number;
+  discountedPrice?: number;
   category: string;
   sizes: ProductSize[];
   images: string[];
@@ -236,6 +237,7 @@ const AdminDashboard: React.FC = () => {
     name: string;
     brand: string;
     price: string;
+    discountedPrice: string;
     category: string;
     images: FileList | null;
     sizes: string;
@@ -245,6 +247,7 @@ const AdminDashboard: React.FC = () => {
       name: '',
       brand: '',
       price: '',
+      discountedPrice: '',
       category: '',
       images: null,
       sizes: '',
@@ -456,6 +459,7 @@ const AdminDashboard: React.FC = () => {
       formData.append('name', newProduct.name);
       formData.append('brand', newProduct.brand);
       formData.append('price', newProduct.price);
+      formData.append('discountedPrice', newProduct.discountedPrice);
       formData.append('category', newProduct.category);
       formData.append('description', newProduct.description);
       // Sizes as JSON array
@@ -478,6 +482,7 @@ const AdminDashboard: React.FC = () => {
           name: '',
           brand: '',
           price: '',
+          discountedPrice: '',
           category: '',
           images: null,
           sizes: '',
@@ -498,6 +503,7 @@ const AdminDashboard: React.FC = () => {
       formData.append('name', newProduct.name);
       formData.append('brand', newProduct.brand);
       formData.append('price', newProduct.price);
+      formData.append('discountedPrice', newProduct.discountedPrice);
       formData.append('category', newProduct.category);
       formData.append('description', newProduct.description);
       formData.append('sizes', JSON.stringify(newProduct.sizes.split(',').map(s => s.trim()).filter(Boolean)));
@@ -519,6 +525,7 @@ const AdminDashboard: React.FC = () => {
           name: '',
           brand: '',
           price: '',
+          discountedPrice: '',
           category: '',
           images: null,
           sizes: '',
@@ -537,6 +544,7 @@ const AdminDashboard: React.FC = () => {
       name: product.name,
       brand: product.brand,
       price: product.price.toString(),
+      discountedPrice: product.discountedPrice?.toString() || '',
       category: product.category,
       images: null, // always reset images on edit
       sizes: product.sizes.map(s => s.size).join(', '),
@@ -550,6 +558,7 @@ const AdminDashboard: React.FC = () => {
       name: '',
       brand: '',
       price: '',
+      discountedPrice: '',
       category: '',
       images: null,
       sizes: '',
@@ -1330,7 +1339,7 @@ const AdminDashboard: React.FC = () => {
                   <Button 
                     onClick={() => {
                       setEditingProduct(null);
-                      setNewProduct({ name: '', brand: '', price: '', category: '', images: null, sizes: '', description: '' });
+                      setNewProduct({ name: '', brand: '', price: '', discountedPrice: '', category: '', images: null, sizes: '', description: '' });
                       setShowProductModal(true);
                     }}
                     className="bg-white text-blue-600 hover:bg-gray-100 text-xs sm:text-sm px-3 sm:px-4 py-2 h-8 sm:h-9"
@@ -2092,10 +2101,16 @@ const AdminDashboard: React.FC = () => {
               onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
             />
             <Input
-              placeholder="Price (₹)"
+              placeholder="Original Price (₹)"
               type="number"
               value={newProduct.price}
               onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+            />
+            <Input
+              placeholder="Discounted Price (₹) - Optional"
+              type="number"
+              value={newProduct.discountedPrice}
+              onChange={(e) => setNewProduct({...newProduct, discountedPrice: e.target.value})}
             />
             <Input
               placeholder="Category"
