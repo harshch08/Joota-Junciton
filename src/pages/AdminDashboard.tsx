@@ -459,7 +459,7 @@ const AdminDashboard: React.FC = () => {
       formData.append('name', newProduct.name);
       formData.append('brand', newProduct.brand);
       formData.append('price', newProduct.price);
-      formData.append('discountedPrice', newProduct.discountedPrice);
+      formData.append('discountedPrice', newProduct.discountedPrice || '');
       formData.append('category', newProduct.category);
       formData.append('description', newProduct.description);
       // Sizes as JSON array
@@ -503,7 +503,7 @@ const AdminDashboard: React.FC = () => {
       formData.append('name', newProduct.name);
       formData.append('brand', newProduct.brand);
       formData.append('price', newProduct.price);
-      formData.append('discountedPrice', newProduct.discountedPrice);
+      formData.append('discountedPrice', newProduct.discountedPrice || '');
       formData.append('category', newProduct.category);
       formData.append('description', newProduct.description);
       formData.append('sizes', JSON.stringify(newProduct.sizes.split(',').map(s => s.trim()).filter(Boolean)));
