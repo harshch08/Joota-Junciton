@@ -171,22 +171,42 @@ export const ordersAPI = {
 // Category API
 export const categoriesAPI = {
   getAllCategories: async () => {
-    const response = await axios.get(`${API_URL}/categories`);
+    const token = localStorage.getItem('token');
+    const response = await axios.get(`${API_URL}/categories`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     return response.data;
   },
 
   createCategory: async (categoryData: { name: string; description?: string }) => {
-    const response = await axios.post(`${API_URL}/categories`, categoryData);
+    const token = localStorage.getItem('token');
+    const response = await axios.post(`${API_URL}/categories`, categoryData, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     return response.data;
   },
 
   updateCategory: async (id: string, categoryData: { name: string; description?: string }) => {
-    const response = await axios.put(`${API_URL}/categories/${id}`, categoryData);
+    const token = localStorage.getItem('token');
+    const response = await axios.put(`${API_URL}/categories/${id}`, categoryData, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     return response.data;
   },
 
   deleteCategory: async (id: string) => {
-    const response = await axios.delete(`${API_URL}/categories/${id}`);
+    const token = localStorage.getItem('token');
+    const response = await axios.delete(`${API_URL}/categories/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     return response.data;
   }
 };
