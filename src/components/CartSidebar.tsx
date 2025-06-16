@@ -38,8 +38,16 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
     navigate('/');
   };
 
+  const handleProductClick = (productId: string) => {
+    onClose();
+    navigate(`/product/${productId}`);
+  };
+
   const getTotalPrice = () => {
-    return items.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
+    return items.reduce((total, item) => {
+      const itemPrice = item.discountedPrice || item.price;
+      return total + (itemPrice * (item.quantity || 1));
+    }, 0);
   };
 
   const handleUpdateQuantity = async (itemId: string, size: string, newQuantity: number) => {
@@ -138,7 +146,10 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                     key={`${item.id}-${item.size}`} 
                     className="flex items-center space-x-2 sm:space-x-4 bg-gray-50 p-2 sm:p-4 rounded-xl hover:bg-gray-100 transition-all duration-200 group w-full"
                   >
-                    <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                    <div 
+                      className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 cursor-pointer"
+                      onClick={() => handleProductClick(item.id)}
+                    >
                       <img
                         src={item.image}
                         alt={item.name}
@@ -148,9 +159,21 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-gray-900 truncate break-words max-w-full">{item.name}</h3>
+                      <h3 
+                        className="text-sm font-medium text-gray-900 truncate break-words max-w-full cursor-pointer hover:text-black transition-colors"
+                        onClick={() => handleProductClick(item.id)}
+                      >
+                        {item.name}
+                      </h3>
                       <p className="text-xs text-gray-500 mb-1">{item.brand}</p>
-                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.price)}</p>
+                      {item.discountedPrice ? (
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.discountedPrice)}</p>
+                          <p className="text-xs text-gray-500 line-through">{formatCurrency(item.price)}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.price)}</p>
+                      )}
                       <p className="text-xs text-gray-500 mt-1">Size: {item.size}</p>
                     </div>
 

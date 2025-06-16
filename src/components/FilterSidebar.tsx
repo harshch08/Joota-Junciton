@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { productsAPI } from '../services/api';
@@ -33,6 +33,10 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
   onBrandChange,
   onPriceRangeChange,
 }) => {
+  const [tempCategory, setTempCategory] = useState(selectedCategory);
+  const [tempBrand, setTempBrand] = useState(selectedBrand);
+  const [tempPriceRange, setTempPriceRange] = useState(selectedPriceRange);
+
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['products'],
     queryFn: () => productsAPI.getAllProducts()
@@ -41,6 +45,13 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
   // Get unique categories and brands from products
   const categories = ['All', ...new Set(products.map(product => product.category).filter(Boolean))];
   const brands = ['All', ...new Set(products.map(product => product.brand).filter(Boolean))];
+
+  const handleApplyFilters = () => {
+    onCategoryChange(tempCategory);
+    onBrandChange(tempBrand);
+    onPriceRangeChange(tempPriceRange);
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -70,11 +81,11 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   {categories.map((category) => (
                     <button
                       key={category}
-                      onClick={() => onCategoryChange(category)}
+                      onClick={() => setTempCategory(category)}
                       className={`block w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedCategory === category
-                          ? 'text-blue-600 bg-blue-50'
-                          : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                        tempCategory === category
+                          ? 'text-white bg-black'
+                          : 'text-gray-700 hover:text-black hover:bg-gray-100'
                       }`}
                     >
                       {category}
@@ -90,11 +101,11 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   {brands.map((brand) => (
                     <button
                       key={brand}
-                      onClick={() => onBrandChange(brand)}
+                      onClick={() => setTempBrand(brand)}
                       className={`block w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedBrand === brand
-                          ? 'text-blue-600 bg-blue-50'
-                          : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                        tempBrand === brand
+                          ? 'text-white bg-black'
+                          : 'text-gray-700 hover:text-black hover:bg-gray-100'
                       }`}
                     >
                       {brand}
@@ -110,11 +121,11 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   {priceRanges.map((range) => (
                     <button
                       key={range.label}
-                      onClick={() => onPriceRangeChange(range.label)}
+                      onClick={() => setTempPriceRange(range.label)}
                       className={`block w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedPriceRange === range.label
-                          ? 'text-blue-600 bg-blue-50'
-                          : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                        tempPriceRange === range.label
+                          ? 'text-white bg-black'
+                          : 'text-gray-700 hover:text-black hover:bg-gray-100'
                       }`}
                     >
                       {range.label}
@@ -126,8 +137,8 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
             <div className="px-4 py-6 sm:px-6 border-t border-gray-200">
               <button
-                onClick={onClose}
-                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                onClick={handleApplyFilters}
+                className="w-full bg-black text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors"
               >
                 Apply Filters
               </button>

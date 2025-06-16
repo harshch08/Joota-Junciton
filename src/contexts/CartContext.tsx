@@ -7,10 +7,11 @@ interface CartItem {
     id: string;
     name: string;
     price: number;
-  image: string;
-  size: string;
-  brand: string;
-  quantity?: number;
+    discountedPrice?: number;
+    image: string;
+    size: string;
+    brand: string;
+    quantity?: number;
 }
 
 interface CartContextType {
@@ -47,6 +48,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 id: item.productId._id,
                 name: item.productId.name,
                 price: item.productId.price,
+                discountedPrice: item.productId.discountedPrice,
                 image: processedImage,
                 size: item.size,
                 brand: item.productId.brand,
@@ -203,7 +205,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getTotalPrice = () => {
-    return items.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
+    return items.reduce((total, item) => {
+      const itemPrice = item.discountedPrice || item.price;
+      return total + (itemPrice * (item.quantity || 1));
+    }, 0);
   };
 
   // Calculate total whenever items change

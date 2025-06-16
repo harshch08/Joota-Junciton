@@ -3,6 +3,7 @@ const router = express.Router();
 const Brand = require('../models/Brand');
 const { protect } = require('../middleware/auth');
 const { adminProtect } = require('../middleware/admin');
+const { brandLogoUpload } = require('../config/cloudinary');
 
 // Get all brands (public)
 router.get('/', async (req, res) => {
@@ -44,9 +45,9 @@ router.get('/slug/:slug', async (req, res) => {
 });
 
 // Create new brand (admin only)
-router.post('/', protect, adminProtect, async (req, res) => {
+router.post('/', protect, adminProtect, brandLogoUpload.single('logo'), async (req, res) => {
   try {
-    const { name, description, logo } = req.body;
+    const { name, description } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: 'Brand name is required' });
@@ -61,7 +62,7 @@ router.post('/', protect, adminProtect, async (req, res) => {
     const brand = await Brand.create({
       name,
       description: description || '',
-      logo: logo || ''
+      logo: req.file ? req.file.path : 'https://via.placeholder.com/150'
     });
 
     res.status(201).json(brand);
@@ -75,9 +76,9 @@ router.post('/', protect, adminProtect, async (req, res) => {
 });
 
 // Update brand (admin only)
-router.put('/:id', protect, adminProtect, async (req, res) => {
+router.put('/:id', protect, adminProtect, brandLogoUpload.single('logo'), async (req, res) => {
   try {
-    const { name, description, logo, isActive } = req.body;
+    const { name, description, isActive } = req.body;
 
     const brand = await Brand.findById(req.params.id);
     if (!brand) {
@@ -94,8 +95,12 @@ router.put('/:id', protect, adminProtect, async (req, res) => {
 
     brand.name = name || brand.name;
     brand.description = description !== undefined ? description : brand.description;
-    brand.logo = logo !== undefined ? logo : brand.logo;
     brand.isActive = isActive !== undefined ? isActive : brand.isActive;
+    
+    // Update logo if a new one is uploaded
+    if (req.file) {
+      brand.logo = req.file.path;
+    }
 
     await brand.save();
     res.json(brand);

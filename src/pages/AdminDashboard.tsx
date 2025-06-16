@@ -190,11 +190,17 @@ interface Brand {
   _id: string;
   name: string;
   description: string;
-  logo: string;  // This will store the filename from images/logo directory
-  bgColor: string;
+  logo: string;  // Store the URL string
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface NewBrand {
+  name: string;
+  description: string;
+  logo: string | File;  // Can be either a URL string or a File object
+  isActive: boolean;
 }
 
 interface Pagination {
@@ -257,17 +263,10 @@ const AdminDashboard: React.FC = () => {
       description: '',
     }
   );
-  const [newBrand, setNewBrand] = useState<{
-    name: string;
-    description: string;
-    logo: string;
-    bgColor: string;
-    isActive: boolean;
-  }>({
+  const [newBrand, setNewBrand] = useState<NewBrand>({
     name: '',
     description: '',
     logo: '',
-    bgColor: '#ffffff',
     isActive: true
   });
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -291,7 +290,11 @@ const AdminDashboard: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
+  const [newCategory, setNewCategory] = useState({ 
+    name: '', 
+    description: '', 
+    image: '' 
+  });
 
   useEffect(() => {
     fetchDashboardData();
@@ -463,9 +466,23 @@ const AdminDashboard: React.FC = () => {
   const fetchCategories = async () => {
     try {
       const data = await categoriesAPI.getAllCategories();
-      setCategories(data);
+      // Check if data is an array directly
+      if (Array.isArray(data)) {
+        setCategories(data);
+      } else if (data && Array.isArray(data.categories)) {
+        setCategories(data.categories);
+      } else {
+        console.error('Invalid categories data received:', data);
+        setCategories([]); // Set empty array as fallback
+        toast({
+          title: "Error",
+          description: "Invalid categories data received",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories([]); // Set empty array on error
       toast({
         title: "Error",
         description: "Failed to fetch categories",
@@ -714,20 +731,21 @@ const AdminDashboard: React.FC = () => {
         return;
       }
 
+      const formData = new FormData();
+      formData.append('name', newBrand.name.trim());
+      formData.append('description', newBrand.description.trim());
+      if (typeof newBrand.logo !== 'string') {
+        formData.append('logo', newBrand.logo);
+      }
+      formData.append('isActive', String(newBrand.isActive));
+
       const token = localStorage.getItem('adminToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/brands`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: newBrand.name.trim(),
-          description: newBrand.description.trim(),
-          logo: newBrand.logo ? `/images/logo/${newBrand.logo}` : '',
-          bgColor: newBrand.bgColor,
-          isActive: newBrand.isActive
-        }),
+        body: formData,
       });
 
       if (response.ok) {
@@ -735,7 +753,6 @@ const AdminDashboard: React.FC = () => {
           name: '',
           description: '',
           logo: '',
-          bgColor: '#ffffff',
           isActive: true
         });
         setShowBrandModal(false);
@@ -759,20 +776,21 @@ const AdminDashboard: React.FC = () => {
         return;
       }
 
+      const formData = new FormData();
+      formData.append('name', newBrand.name.trim());
+      formData.append('description', newBrand.description.trim());
+      if (typeof newBrand.logo !== 'string') {
+        formData.append('logo', newBrand.logo);
+      }
+      formData.append('isActive', String(newBrand.isActive));
+
       const token = localStorage.getItem('adminToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/brands/${editingBrand._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: newBrand.name.trim(),
-          description: newBrand.description.trim(),
-          logo: newBrand.logo ? `/images/logo/${newBrand.logo}` : '',
-          bgColor: newBrand.bgColor,
-          isActive: newBrand.isActive
-        }),
+        body: formData,
       });
 
       if (response.ok) {
@@ -781,7 +799,6 @@ const AdminDashboard: React.FC = () => {
           name: '',
           description: '',
           logo: '',
-          bgColor: '#ffffff',
           isActive: true
         });
         setShowBrandModal(false);
@@ -802,7 +819,6 @@ const AdminDashboard: React.FC = () => {
       name: brand.name,
       description: brand.description,
       logo: brand.logo || '',
-      bgColor: brand.bgColor || '#ffffff',
       isActive: brand.isActive
     });
     setShowBrandModal(true);
@@ -1059,19 +1075,41 @@ const AdminDashboard: React.FC = () => {
     const logoMap: { [key: string]: string } = {
       'Nike': 'nike.png',
       'Adidas': 'adidas.png',
-      'New Balance': 'new-balance.png',
-      'Skechers': 'skechers.png',
-      'Crocs': 'crocs.png',
-      'Asics': 'asics.png',
-      'Louis Vuitton': 'louis-vuitton.png',
       'Puma': 'puma.png',
-      'Reebok': 'reebok.png'
+      'Louis Vuitton': 'Louis-Vuitton.png',
+      'New Balance': 'new-balance.png',
+      'Reebok': 'reebok.png',
+      'Under Armour': 'under-armour.png',
+      'Asics': 'asics.png',
+      'Skechers': 'skechers.png',
+      'Brooks': 'brooks.png',
+      'Saucony': 'saucony.png',
+      'Crocs': 'crocs.png',
+     
     };
-    return logoMap[brandName] || 'default.png';
+    return logoMap[brandName] || 'default-logo.png';
   };
 
   // Category handlers
   const handleAddCategory = async () => {
+    if (!newCategory.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Category name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newCategory.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Category description is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await categoriesAPI.createCategory(newCategory);
       toast({
@@ -1080,11 +1118,12 @@ const AdminDashboard: React.FC = () => {
       });
       setShowCategoryModal(false);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding category:', error);
+      const errorMessage = error.response?.data?.message || "Failed to add category";
       toast({
         title: "Error",
-        description: "Failed to add category",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -1092,6 +1131,25 @@ const AdminDashboard: React.FC = () => {
 
   const handleUpdateCategory = async () => {
     if (!editingCategory) return;
+
+    if (!newCategory.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Category name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newCategory.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Category description is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await categoriesAPI.updateCategory(editingCategory._id, newCategory);
       toast({
@@ -1100,11 +1158,12 @@ const AdminDashboard: React.FC = () => {
       });
       setShowCategoryModal(false);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating category:', error);
+      const errorMessage = error.response?.data?.message || "Failed to update category";
       toast({
         title: "Error",
-        description: "Failed to update category",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -1113,16 +1172,17 @@ const AdminDashboard: React.FC = () => {
   const handleDeleteCategory = async (id: string) => {
     try {
       await categoriesAPI.deleteCategory(id);
+      // Remove the category from the local state
+      setCategories(categories.filter(category => category._id !== id));
       toast({
         title: "Success",
         description: "Category deleted successfully",
       });
-      fetchCategories();
     } catch (error) {
       console.error('Error deleting category:', error);
       toast({
         title: "Error",
-        description: "Failed to delete category",
+        description: error.response?.data?.message || "Failed to delete category",
         variant: "destructive",
       });
     }
@@ -1133,6 +1193,7 @@ const AdminDashboard: React.FC = () => {
     setNewCategory({
       name: category.name,
       description: category.description || '',
+      image: category.image || ''
     });
     setShowCategoryModal(true);
   };
@@ -1581,7 +1642,7 @@ const AdminDashboard: React.FC = () => {
                   <Button 
                     onClick={() => {
                       setEditingBrand(null);
-                      setNewBrand({ name: '', description: '', logo: '', bgColor: '#ffffff', isActive: true });
+                      setNewBrand({ name: '', description: '', logo: '', isActive: true });
                       setShowBrandModal(true);
                     }}
                     className="bg-white text-green-600 hover:bg-gray-100 text-xs sm:text-sm px-3 sm:px-4 py-2 h-8 sm:h-9"
@@ -1651,24 +1712,21 @@ const AdminDashboard: React.FC = () => {
           </TabsContent>
 
           {/* Categories Tab */}
-          <TabsContent value="categories" className="space-y-4 sm:space-y-6">
-            <Card className="shadow-lg border-0">
-              <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-lg px-4 sm:px-6 py-3 sm:py-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                  <CardTitle className="text-base sm:text-lg lg:text-xl">Categories Management</CardTitle>
-                  <Button 
-                    onClick={() => {
-                      setEditingCategory(null);
-                      setNewCategory({ name: '', description: '' });
-                      setShowCategoryModal(true);
-                    }}
-                    className="bg-white text-purple-600 hover:bg-gray-100 text-xs sm:text-sm px-3 sm:px-4 py-2 h-8 sm:h-9"
-                  >
-                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                    <span className="hidden sm:inline">Add Category</span>
-                    <span className="sm:hidden">Add</span>
-                  </Button>
-                </div>
+          <TabsContent value="categories" className="space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Categories</CardTitle>
+                <Button 
+                  onClick={() => {
+                    setEditingCategory(null);
+                    setNewCategory({ name: '', description: '', image: '' });
+                    setShowCategoryModal(true);
+                  }}
+                  className="h-8"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -1676,15 +1734,15 @@ const AdminDashboard: React.FC = () => {
                     <TableHeader>
                       <TableRow className="bg-gray-50">
                         <TableHead className="text-xs sm:text-sm px-2 sm:px-6">Name</TableHead>
-                        <TableHead className="text-xs sm:text-sm px-2 sm:px-6">Description</TableHead>
+                        <TableHead className="text-xs sm:text-sm px-2 sm:px-6 hidden sm:table-cell">Description</TableHead>
                         <TableHead className="text-xs sm:text-sm px-2 sm:px-6">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {categories.map((category) => (
+                      {Array.isArray(categories) && categories.map((category) => (
                         <TableRow key={category._id} className="hover:bg-gray-50">
                           <TableCell className="font-medium text-xs sm:text-sm px-2 sm:px-6">{category.name}</TableCell>
-                          <TableCell className="text-xs sm:text-sm px-2 sm:px-6">{category.description || '-'}</TableCell>
+                          <TableCell className="text-xs sm:text-sm px-2 sm:px-6 hidden sm:table-cell">{category.description}</TableCell>
                           <TableCell className="px-2 sm:px-6">
                             <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                               <Button 
@@ -2318,29 +2376,62 @@ const AdminDashboard: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <Input
-              placeholder="Brand Name"
-              value={newBrand.name}
-              onChange={(e) => setNewBrand({...newBrand, name: e.target.value})}
-            />
-            <Input
-              placeholder="Image URL (optional)"
-              value={newBrand.logo}
-              onChange={(e) => setNewBrand({...newBrand, logo: e.target.value})}
-            />
-            <Input
-              placeholder="Description"
-              value={newBrand.description}
-              onChange={(e) => setNewBrand({...newBrand, description: e.target.value})}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="name">Brand Name *</Label>
+              <Input
+                id="name"
+                placeholder="Enter brand name"
+                value={newBrand.name}
+                onChange={(e) => setNewBrand({...newBrand, name: e.target.value})}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                placeholder="Enter brand description"
+                value={newBrand.description}
+                onChange={(e) => setNewBrand({...newBrand, description: e.target.value})}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="logo">Brand Logo *</Label>
+              <div className="flex items-center gap-4">
+                <Input
+                  id="logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setNewBrand({...newBrand, logo: file});
+                    }
+                  }}
+                  className="cursor-pointer"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={newBrand.isActive}
+                onChange={(e) => setNewBrand({...newBrand, isActive: e.target.checked})}
+                className="rounded border-gray-300"
+              />
+              <Label htmlFor="isActive" className="text-sm">Active</Label>
+            </div>
           </div>
           <DialogFooter className="mt-4">
             {editingBrand ? (
-              <Button onClick={async () => { await handleUpdateBrand(); setShowBrandModal(false); }} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={handleUpdateBrand} className="bg-green-600 hover:bg-green-700">
                 <Edit className="h-4 w-4 mr-2" /> Update Brand
               </Button>
             ) : (
-              <Button onClick={async () => { await handleAddBrand(); setShowBrandModal(false); }} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={handleAddBrand} className="bg-green-600 hover:bg-green-700">
                 <Plus className="h-4 w-4 mr-2" /> Add Brand
               </Button>
             )}
@@ -2561,17 +2652,46 @@ const AdminDashboard: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <Input
-              placeholder="Category Name"
-              value={newCategory.name}
-              onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
-            />
-            <Textarea
-              placeholder="Description (optional)"
-              value={newCategory.description}
-              onChange={(e) => setNewCategory({...newCategory, description: e.target.value})}
-              rows={3}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="name">Category Name *</Label>
+              <Input
+                id="name"
+                placeholder="Enter category name"
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                placeholder="Enter category description"
+                value={newCategory.description}
+                onChange={(e) => setNewCategory({...newCategory, description: e.target.value})}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image">Category Image (Optional)</Label>
+              <Input
+                id="image"
+                type="text"
+                placeholder="Enter image URL (optional)"
+                value={newCategory.image}
+                onChange={(e) => setNewCategory({...newCategory, image: e.target.value})}
+              />
+              {newCategory.image && (
+                <div className="mt-2">
+                  <img 
+                    src={newCategory.image} 
+                    alt="Category preview" 
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter className="mt-4">
             {editingCategory ? (

@@ -125,7 +125,9 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             >
               <Star
                 className={`w-6 h-6 ${
-                  star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                  star <= rating
+                    ? 'text-yellow-400 fill-yellow-400'
+                    : 'text-gray-300'
                 }`}
               />
             </button>
@@ -135,7 +137,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Review
+          Your Review
         </label>
         <Textarea
           value={message}

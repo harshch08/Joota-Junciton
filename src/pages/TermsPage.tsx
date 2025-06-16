@@ -110,7 +110,7 @@ const TermsPage: React.FC = () => {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Us</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Us For Cancellation and Refunds</h2>
               <div className="space-y-4 text-gray-600">
                 <p>If you have any questions about our shipping and returns policy, please don't hesitate to contact us:</p>
                 <ul className="list-disc pl-6 space-y-2">

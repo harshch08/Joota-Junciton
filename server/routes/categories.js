@@ -145,10 +145,10 @@ router.put('/:id', protect, adminProtect, async (req, res) => {
   }
 });
 
-// Delete category (Admin only) - Soft delete by setting isActive to false
+// Delete category (Admin only)
 router.delete('/:id', protect, adminProtect, async (req, res) => {
   try {
-    console.log(`DELETE /api/categories/${req.params.id} - Soft deleting category`);
+    console.log(`DELETE /api/categories/${req.params.id} - Deleting category`);
     
     const category = await Category.findById(req.params.id);
     
@@ -156,11 +156,10 @@ router.delete('/:id', protect, adminProtect, async (req, res) => {
       return res.status(404).json({ message: 'Category not found' });
     }
     
-    // Soft delete by setting isActive to false
-    category.isActive = false;
-    await category.save();
+    // Delete the category
+    await Category.deleteOne({ _id: req.params.id });
     
-    console.log('Category soft deleted successfully:', category._id);
+    console.log('Category deleted successfully:', req.params.id);
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {
     console.error('Error deleting category:', error);

@@ -29,12 +29,24 @@ const reviewStorage = new CloudinaryStorage({
   }
 });
 
+// Configure storage for brand logos
+const brandLogoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'joota-junction/brands',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 400, height: 400, crop: 'limit' }]
+  }
+});
+
 // Create multer upload instances
 const productUpload = multer({ storage: productStorage });
 const reviewUpload = multer({ storage: reviewStorage });
+const brandLogoUpload = multer({ storage: brandLogoStorage });
 
 module.exports = {
   cloudinary,
   productUpload,
-  reviewUpload
+  reviewUpload,
+  brandLogoUpload
 }; 

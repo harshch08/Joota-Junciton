@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { API_URL } from '../config';
+import { Badge } from './ui/badge';
 
 // Indian currency formatter
 const formatIndianCurrency = (amount: number) => {
@@ -43,7 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onAu
   };
 
   return (
-    <div 
+    <div
       className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -61,13 +62,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onAu
             {Math.round(((product.price - product.discountedPrice) / product.price) * 100)}% OFF
           </div>
         )}
+        <div className="absolute top-2 left-2 z-10">
+          {product.featured && (
+            <Badge 
+              className="bg-black text-white hover:bg-black/90"
+            >
+              Featured
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Product Info */}
       <div className="p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{product.name}</h3>
         <p className="text-sm text-gray-500 mb-2">{product.brand}</p>
-        
+
         <div className="flex items-center gap-2">
           {product.discountedPrice ? (
             <>

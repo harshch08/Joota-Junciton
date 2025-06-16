@@ -500,22 +500,24 @@ const ProductDetails: React.FC = () => {
             <div className="flex items-center gap-3 mt-1">
               <div className="flex items-center gap-4">
                 {product.discountedPrice ? (
-                  <>
-                    <span className="text-3xl font-bold text-gray-900">
-                      ₹{product.discountedPrice.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-xl text-gray-500 line-through">
-                      ₹{product.price.toLocaleString('en-IN')}
-                    </span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-3xl font-bold text-gray-900">
+                        ₹{product.discountedPrice.toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-xl text-gray-500 line-through">
+                        ₹{product.price.toLocaleString('en-IN')}
+                      </span>
+                    </div>
                     <span className="text-sm text-green-600 font-medium">
                       {Math.round(((product.price - product.discountedPrice) / product.price) * 100)}% OFF
                     </span>
-                  </>
+                  </div>
                 ) : (
                   <span className="text-3xl font-bold text-gray-900">
                     ₹{product.price.toLocaleString('en-IN')}
-                  </span>
-                )}
+                </span>
+              )}
               </div>
               <span className="flex items-center gap-1 text-yellow-500 font-semibold text-lg">
                 <Star className="h-5 w-5" /> {product.rating ? product.rating.toFixed(1) : 'N/A'}
@@ -628,21 +630,27 @@ const ProductDetails: React.FC = () => {
                       alt={product.name}
                       className="w-full h-full object-contain p-4"
                     />
-                    {product.originalPrice && product.originalPrice > product.price && (
+                    {product.discountedPrice && (
                       <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                        {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                        {Math.round(((product.price - product.discountedPrice) / product.price) * 100)}% OFF
                       </span>
                     )}
                   </div>
                   <div className="p-4">
                     <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">{product.name}</h3>
                     <div className="flex items-center gap-2">
+                      {product.discountedPrice ? (
+                        <>
                       <span className="text-lg font-bold text-primary">
+                            ₹{product.discountedPrice.toLocaleString()}
+                          </span>
+                          <span className="text-sm text-gray-500 line-through">
                         ₹{product.price.toLocaleString()}
                       </span>
-                      {product.originalPrice && product.originalPrice > product.price && (
-                        <span className="text-sm text-gray-500 line-through">
-                          ₹{product.originalPrice.toLocaleString()}
+                        </>
+                      ) : (
+                        <span className="text-lg font-bold text-primary">
+                          ₹{product.price.toLocaleString()}
                         </span>
                       )}
                     </div>

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Heart, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Heart, ShoppingCart, Star, TrendingUp } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { API_URL } from '../config';
+import { Badge } from './ui/badge';
 
 const formatIndianCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -89,11 +91,12 @@ const FeaturedProductCard: React.FC<FeaturedProductCardProps> = ({ product, onPr
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Featured Badge */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
-          <TrendingUp className="w-3 h-3" />
+      <div className="absolute top-2 left-2 z-10">
+        <Badge 
+          className="bg-black text-white hover:bg-black/90"
+        >
           Featured
-        </div>
+        </Badge>
       </div>
 
       {/* Image Container */}

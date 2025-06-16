@@ -180,24 +180,66 @@ export const categoriesAPI = {
     return response.data;
   },
 
-  createCategory: async (categoryData: { name: string; description?: string }) => {
+  createCategory: async (categoryData: { name: string; description?: string; image?: string }) => {
     const token = localStorage.getItem('token');
-    const response = await axios.post(`${API_URL}/categories`, categoryData, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return response.data;
+    const requestData = {
+      name: categoryData.name.trim(),
+      description: categoryData.description?.trim() || '',
+      ...(categoryData.image && { image: categoryData.image }), // Only include image if provided
+      isActive: true
+    };
+    console.log('Creating category with data:', requestData);
+    try {
+      const response = await axios.post(`${API_URL}/categories`, requestData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Category creation error details:', {
+        requestData,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.response?.data?.message || error.message,
+        error: error.response?.data?.error || error.message,
+        headers: error.response?.headers,
+      });
+      throw error;
+    }
   },
 
-  updateCategory: async (id: string, categoryData: { name: string; description?: string }) => {
+  updateCategory: async (id: string, categoryData: { name: string; description?: string; image?: string }) => {
     const token = localStorage.getItem('token');
-    const response = await axios.put(`${API_URL}/categories/${id}`, categoryData, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return response.data;
+    const requestData = {
+      name: categoryData.name.trim(),
+      description: categoryData.description?.trim() || '',
+      ...(categoryData.image && { image: categoryData.image }), // Only include image if provided
+      isActive: true
+    };
+    console.log('Updating category with data:', requestData);
+    try {
+      const response = await axios.put(`${API_URL}/categories/${id}`, requestData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Category update error details:', {
+        requestData,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.response?.data?.message || error.message,
+        error: error.response?.data?.error || error.message,
+        headers: error.response?.headers,
+      });
+      throw error;
+    }
   },
 
   deleteCategory: async (id: string) => {
@@ -211,16 +253,59 @@ export const categoriesAPI = {
   }
 };
 
-// Brands API
+// Brand API
 export const brandsAPI = {
-  getAllBrands: async (): Promise<Brand[]> => {
-      const response = await api.get('/brands');
-      return response.data;
+  getAllBrands: async () => {
+    const response = await api.get('/brands');
+    return response.data;
   },
+
+  createBrand: async (brandData: { name: string; description?: string; logo?: File }) => {
+    const formData = new FormData();
+    formData.append('name', brandData.name.trim());
+    if (brandData.description) {
+      formData.append('description', brandData.description.trim());
+    }
+    if (brandData.logo) {
+      formData.append('logo', brandData.logo);
+    }
+
+    const response = await api.post('/brands', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  updateBrand: async (id: string, brandData: { name: string; description?: string; logo?: File }) => {
+    const formData = new FormData();
+    formData.append('name', brandData.name.trim());
+    if (brandData.description) {
+      formData.append('description', brandData.description.trim());
+    }
+    if (brandData.logo) {
+      formData.append('logo', brandData.logo);
+    }
+
+    const response = await api.put(`/brands/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  deleteBrand: async (id: string) => {
+    const response = await api.delete(`/brands/${id}`);
+    return response.data;
+  },
+
   getBrandById: async (id: string) => {
     const response = await api.get(`/brands/${id}`);
     return response.data;
   },
+
   getBrandBySlug: async (slug: string): Promise<Brand> => {
     if (!slug) {
       throw new Error('Brand slug is required');
@@ -233,18 +318,7 @@ export const brandsAPI = {
       throw error;
     }
   },
-  createBrand: async (data: any) => {
-    const response = await api.post('/brands', data);
-    return response.data;
-  },
-  updateBrand: async (id: string, data: any) => {
-    const response = await api.put(`/brands/${id}`, data);
-    return response.data;
-  },
-  deleteBrand: async (id: string) => {
-    const response = await api.delete(`/brands/${id}`);
-    return response.data;
-  },
+
   getAllBrandsAdmin: async () => {
     const response = await api.get('/brands/admin/all');
     return response.data;

@@ -27,15 +27,18 @@ const BrandsPage: React.FC<BrandsPageProps> = ({ isNavigation = false }) => {
   });
 
   const { data: allProducts = [], isLoading: allProductsLoading } = useQuery<Product[]>({
-    queryKey: ['allProducts'],
-    queryFn: () => productsAPI.getAllProducts({})
+    queryKey: ['allProducts', sortBy],
+    queryFn: () => productsAPI.getAllProducts({ sortBy: sortBy || 'newest' })
   });
 
   const { data: brandProducts = [], isLoading: brandProductsLoading } = useQuery<Product[]>({
     queryKey: ['brandProducts', selectedBrand?.name, sortBy],
     queryFn: async () => {
       if (!selectedBrand?.name) return [];
-      return productsAPI.getAllProducts({ brand: selectedBrand.name });
+      return productsAPI.getAllProducts({ 
+        brand: selectedBrand.name, 
+        sortBy: sortBy || 'newest' 
+      });
     },
     enabled: !!selectedBrand?.name
   });
@@ -85,6 +88,19 @@ const BrandsPage: React.FC<BrandsPageProps> = ({ isNavigation = false }) => {
 
   const displayProducts = selectedBrand ? brandProducts : allProducts;
   const isLoading = selectedBrand ? brandProductsLoading : allProductsLoading;
+
+  // Sort products based on sortBy value
+  const sortedProducts = [...displayProducts].sort((a, b) => {
+    switch (sortBy) {
+      case 'price-low':
+        return a.price - b.price;
+      case 'price-high':
+        return b.price - a.price;
+      case 'newest':
+      default:
+        return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+    }
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -176,9 +192,9 @@ const BrandsPage: React.FC<BrandsPageProps> = ({ isNavigation = false }) => {
                 </div>
               ))}
             </div>
-          ) : displayProducts.length > 0 ? (
+          ) : sortedProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {displayProducts.map((product) => (
+              {sortedProducts.map((product) => (
                 <ProductCard 
                   key={product._id} 
                   product={product}

@@ -93,25 +93,25 @@ const OrdersPage: React.FC = () => {
         }
       });
       if (!response.ok) throw new Error('Failed to fetch orders');
-      const data = await response.json();
-      console.log('Fetched orders:', data);
-      
-      // Validate and clean the data
-      const validatedOrders = data.map((order: Order) => ({
-        ...order,
-        items: order.items.map((item: OrderItem) => ({
-          ...item,
-          product: item.product || {
-            _id: 'unknown',
-            name: 'Product Unavailable',
-            price: item.price,
-            images: [],
-            brand: 'Unknown Brand'
-          }
-        }))
-      }));
-      
-      setOrders(validatedOrders);
+        const data = await response.json();
+        console.log('Fetched orders:', data);
+        
+        // Validate and clean the data
+        const validatedOrders = data.map((order: Order) => ({
+          ...order,
+          items: order.items.map((item: OrderItem) => ({
+            ...item,
+            product: item.product || {
+              _id: 'unknown',
+              name: 'Product Unavailable',
+              price: item.price,
+              images: [],
+              brand: 'Unknown Brand'
+            }
+          }))
+        }));
+        
+        setOrders(validatedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
       setError('Error loading orders');
@@ -352,18 +352,18 @@ const OrdersPage: React.FC = () => {
                               onClick={() => navigate(`/product/${item.product._id}`)}
                               className="cursor-pointer"
                             >
-                              <img
-                                src={item.product.images && item.product.images.length > 0 ? 
-                                  (item.product.images[0].startsWith('/uploads/products') ? 
-                                    `${API_URL}${item.product.images[0]}` : 
-                                    item.product.images[0]) : 
-                                  '/placeholder-image.jpg'}
-                                alt={item.product.name || 'Product'}
+                            <img
+                              src={item.product.images && item.product.images.length > 0 ? 
+                                (item.product.images[0].startsWith('/uploads/products') ? 
+                                  `${API_URL}${item.product.images[0]}` : 
+                                  item.product.images[0]) : 
+                                '/placeholder-image.jpg'}
+                              alt={item.product.name || 'Product'}
                                 className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0 hover:opacity-90 transition-opacity"
-                                onError={(e) => {
-                                  e.currentTarget.src = '/placeholder-image.jpg';
-                                }}
-                              />
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder-image.jpg';
+                              }}
+                            />
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 

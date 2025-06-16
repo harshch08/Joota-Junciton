@@ -276,7 +276,7 @@ const Index = () => {
             </div>
             <button
               onClick={() => setShowFilters(true)}
-              className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors bg-white px-4 py-2 rounded-lg border border-gray-200 hover:border-blue-600"
+              className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               <Filter className="h-5 w-5" />
               <span>Filters</span>

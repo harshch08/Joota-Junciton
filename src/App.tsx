@@ -32,6 +32,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Footer from './components/Footer';
 import SearchPage from './pages/SearchPage';
 import TermsPage from './pages/TermsPage';
+import ContactUs from './pages/ContactUs';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsAndConditions from './pages/TermsAndConditions';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +110,9 @@ const AppContent = () => {
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/brand-products/:brandName" element={<BrandProductsPage />} />
             <Route path="/terms" element={<TermsPage />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

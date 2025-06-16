@@ -64,12 +64,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   return (
     <div className="space-y-2">
-      <input
-        type="file"
+          <input
+            type="file"
         accept="image/*"
-        multiple={multiple}
-        onChange={handleFileChange}
-        disabled={uploading}
+            multiple={multiple}
+            onChange={handleFileChange}
+            disabled={uploading}
         className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
       />
       {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -77,12 +77,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       {previewUrls.length > 0 && (
         <div className="grid grid-cols-2 gap-2 mt-2">
           {previewUrls.map((url, index) => (
-            <img
+              <img
               key={index}
-              src={url}
+                src={url}
               alt={`Preview ${index + 1}`}
               className="w-full h-24 object-cover rounded"
-            />
+              />
           ))}
         </div>
       )}

@@ -136,7 +136,7 @@ const Checkout = () => {
       };
 
       // Create order in MongoDB via API
-      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,14 +208,14 @@ const Checkout = () => {
 
     try {
       // Create Razorpay order
-      const res = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders/create-razorpay-order`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders/create-razorpay-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({ 
-          amount: finalTotal,
+          amount: codMode ? 200 : finalTotal,
           codMode 
         })
       });
@@ -295,7 +295,7 @@ const Checkout = () => {
       };
 
       // Create order in database
-      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -355,7 +355,7 @@ const Checkout = () => {
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-8 w-full">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center text-blue-600 hover:text-blue-700 mb-8"
+          className="flex items-center text-black hover:text-gray-700 mb-8 transition-colors"
         >
           <ArrowLeft className="h-5 w-5 mr-2" />
           Back to Shopping
@@ -591,9 +591,20 @@ const Checkout = () => {
                     <h3 className="font-medium text-gray-900 truncate break-words max-w-full">{item.name}</h3>
                     <p className="text-sm text-gray-600">Size: {item.size}</p>
                     <p className="text-sm text-gray-600">Qty: {item.quantity || 1}</p>
-                    <p className="text-sm font-medium text-gray-900 mt-1">
-                      {formatCurrency(item.price * (item.quantity || 1))}
-                    </p>
+                    {item.discountedPrice ? (
+                      <div className="flex items-center space-x-2">
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatCurrency(item.discountedPrice * (item.quantity || 1))}
+                        </p>
+                        <p className="text-xs text-gray-500 line-through">
+                          {formatCurrency(item.price * (item.quantity || 1))}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-medium text-gray-900">
+                        {formatCurrency(item.price * (item.quantity || 1))}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

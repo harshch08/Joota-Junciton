@@ -132,7 +132,7 @@ const BrandPage: React.FC = () => {
       'Skechers': 'skechers.png',
       'Crocs': 'crocs.png',
       'Asics': 'asics.png',
-      'Louis Vuitton': 'louis vuitton.png'
+      'Louis Vuitton': 'Louis Vuitton.png'
     };
     return logoMap[brandName] || 'pngwing.com.png';
   };

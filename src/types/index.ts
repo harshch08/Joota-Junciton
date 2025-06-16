@@ -69,7 +69,7 @@ export interface Order {
   };
   paymentStatus: 'pending' | 'completed' | 'failed';
   createdAt: string;
-}
+} 
 
 export interface Category {
   _id: string;
