@@ -199,7 +199,7 @@ router.get('/orders/:id', adminProtect, async (req, res) => {
 // Create new product
 router.post('/products', protect, admin, productUpload.array('images', 5), async (req, res) => {
   try {
-    const { name, brand, category, price, description, sizes } = req.body;
+    const { name, brand, category, price, discountedPrice, description, sizes } = req.body;
     
     // Validate required fields
     if (!name || !brand || !category || !price || !description || !sizes) {
@@ -219,7 +219,8 @@ router.post('/products', protect, admin, productUpload.array('images', 5), async
       name,
       brand,
       category,
-      price,
+      price: parseFloat(price),
+      discountedPrice: discountedPrice ? parseFloat(discountedPrice) : undefined,
       description,
       images,
       sizes: formattedSizes
@@ -235,13 +236,14 @@ router.post('/products', protect, admin, productUpload.array('images', 5), async
 // Update product
 router.put('/products/:id', protect, admin, productUpload.array('images', 5), async (req, res) => {
   try {
-    const { name, brand, category, price, description, sizes } = req.body;
+    const { name, brand, category, price, discountedPrice, description, sizes } = req.body;
     
     const updateData = {
       name,
       brand,
       category,
-      price,
+      price: parseFloat(price),
+      discountedPrice: discountedPrice ? parseFloat(discountedPrice) : undefined,
       description
     };
 
