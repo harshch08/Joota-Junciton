@@ -39,6 +39,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Image as ImageIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { categoriesAPI } from '@/services/api';
+import { toast } from "@/components/ui/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 interface DashboardStats {
   totalUsers: number;
@@ -285,6 +288,10 @@ const AdminDashboard: React.FC = () => {
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
 
   useEffect(() => {
     fetchDashboardData();
@@ -294,6 +301,7 @@ const AdminDashboard: React.FC = () => {
     fetchFeaturedProducts();
     fetchAllProductsForFeatured();
     fetchStoreSettings();
+    fetchCategories();
   }, []);
 
   useEffect(() => {
@@ -449,6 +457,20 @@ const AdminDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching store settings:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await categoriesAPI.getAllCategories();
+      setCategories(data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch categories",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1048,6 +1070,73 @@ const AdminDashboard: React.FC = () => {
     return logoMap[brandName] || 'default.png';
   };
 
+  // Category handlers
+  const handleAddCategory = async () => {
+    try {
+      await categoriesAPI.createCategory(newCategory);
+      toast({
+        title: "Success",
+        description: "Category added successfully",
+      });
+      setShowCategoryModal(false);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory) return;
+    try {
+      await categoriesAPI.updateCategory(editingCategory._id, newCategory);
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+      });
+      setShowCategoryModal(false);
+      fetchCategories();
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await categoriesAPI.deleteCategory(id);
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+      fetchCategories();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    setNewCategory({
+      name: category.name,
+      description: category.description || '',
+    });
+    setShowCategoryModal(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1099,10 +1188,11 @@ const AdminDashboard: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-4 sm:mb-6 bg-white shadow-sm h-auto">
+          <TabsList className="grid w-full grid-cols-6 mb-4 sm:mb-6 bg-white shadow-sm h-auto">
             <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 sm:py-3 px-1 sm:px-3">Overview</TabsTrigger>
             <TabsTrigger value="products" className="text-xs sm:text-sm py-2 sm:py-3 px-1 sm:px-3">Products</TabsTrigger>
             <TabsTrigger value="brands" className="text-xs sm:text-sm py-2 sm:py-3 px-1 sm:px-3">Brands</TabsTrigger>
+            <TabsTrigger value="categories" className="text-xs sm:text-sm py-2 sm:py-3 px-1 sm:px-3">Categories</TabsTrigger>
             <TabsTrigger value="orders" className="text-xs sm:text-sm py-2 sm:py-3 px-1 sm:px-3">Orders</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs sm:text-sm py-2 sm:py-3 px-1 sm:px-3">Settings</TabsTrigger>
           </TabsList>
@@ -1544,6 +1634,72 @@ const AdminDashboard: React.FC = () => {
                                 variant="outline" 
                                 size="sm" 
                                 onClick={() => handleDeleteBrand(brand._id)}
+                                className="text-xs px-2 py-1 h-7 sm:h-8 text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                <span className="hidden sm:inline">Delete</span>
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Categories Tab */}
+          <TabsContent value="categories" className="space-y-4 sm:space-y-6">
+            <Card className="shadow-lg border-0">
+              <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-t-lg px-4 sm:px-6 py-3 sm:py-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                  <CardTitle className="text-base sm:text-lg lg:text-xl">Categories Management</CardTitle>
+                  <Button 
+                    onClick={() => {
+                      setEditingCategory(null);
+                      setNewCategory({ name: '', description: '' });
+                      setShowCategoryModal(true);
+                    }}
+                    className="bg-white text-purple-600 hover:bg-gray-100 text-xs sm:text-sm px-3 sm:px-4 py-2 h-8 sm:h-9"
+                  >
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <span className="hidden sm:inline">Add Category</span>
+                    <span className="sm:hidden">Add</span>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50">
+                        <TableHead className="text-xs sm:text-sm px-2 sm:px-6">Name</TableHead>
+                        <TableHead className="text-xs sm:text-sm px-2 sm:px-6">Description</TableHead>
+                        <TableHead className="text-xs sm:text-sm px-2 sm:px-6">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {categories.map((category) => (
+                        <TableRow key={category._id} className="hover:bg-gray-50">
+                          <TableCell className="font-medium text-xs sm:text-sm px-2 sm:px-6">{category.name}</TableCell>
+                          <TableCell className="text-xs sm:text-sm px-2 sm:px-6">{category.description || '-'}</TableCell>
+                          <TableCell className="px-2 sm:px-6">
+                            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleEditCategory(category)}
+                                className="text-xs px-2 py-1 h-7 sm:h-8"
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                <span className="hidden sm:inline">Edit</span>
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleDeleteCategory(category._id)}
                                 className="text-xs px-2 py-1 h-7 sm:h-8 text-red-600 hover:text-red-700"
                               >
                                 <Trash2 className="h-3 w-3 mr-1" />
@@ -2390,6 +2546,45 @@ const AdminDashboard: React.FC = () => {
               <Button variant="outline" className="w-full sm:w-auto">
                 Close
               </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Modal */}
+      <Dialog open={showCategoryModal} onOpenChange={setShowCategoryModal}>
+        <DialogContent className="max-w-lg w-full">
+          <DialogHeader>
+            <DialogTitle>{editingCategory ? 'Edit Category' : 'Add New Category'}</DialogTitle>
+            <DialogDescription>
+              {editingCategory ? 'Update category details below.' : 'Fill in the details to add a new category.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Category Name"
+              value={newCategory.name}
+              onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+            />
+            <Textarea
+              placeholder="Description (optional)"
+              value={newCategory.description}
+              onChange={(e) => setNewCategory({...newCategory, description: e.target.value})}
+              rows={3}
+            />
+          </div>
+          <DialogFooter className="mt-4">
+            {editingCategory ? (
+              <Button onClick={handleUpdateCategory} className="bg-purple-600 hover:bg-purple-700">
+                <Edit className="h-4 w-4 mr-2" /> Update Category
+              </Button>
+            ) : (
+              <Button onClick={handleAddCategory} className="bg-purple-600 hover:bg-purple-700">
+                <Plus className="h-4 w-4 mr-2" /> Add Category
+              </Button>
+            )}
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>

@@ -168,19 +168,25 @@ export const ordersAPI = {
   }
 };
 
-// Categories API
+// Category API
 export const categoriesAPI = {
   getAllCategories: async () => {
-    try {
-      const response = await api.get('/categories');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      throw error;
-    }
+    const response = await axios.get(`${API_URL}/categories`);
+    return response.data;
   },
-  getCategoryById: async (id: string) => {
-    const response = await api.get(`/categories/${id}`);
+
+  createCategory: async (categoryData: { name: string; description?: string }) => {
+    const response = await axios.post(`${API_URL}/categories`, categoryData);
+    return response.data;
+  },
+
+  updateCategory: async (id: string, categoryData: { name: string; description?: string }) => {
+    const response = await axios.put(`${API_URL}/categories/${id}`, categoryData);
+    return response.data;
+  },
+
+  deleteCategory: async (id: string) => {
+    const response = await axios.delete(`${API_URL}/categories/${id}`);
     return response.data;
   }
 };
