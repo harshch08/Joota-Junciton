@@ -27,7 +27,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/forgot-password`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,7 +57,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/verify-forgot-password-otp`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/verify-forgot-password-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/reset-password`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

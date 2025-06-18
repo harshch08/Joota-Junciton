@@ -60,13 +60,18 @@ const userSchema = new mongoose.Schema({
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) {
+    console.log('Password not modified, skipping hash');
+    return next();
+  }
   
   try {
     console.log('Hashing password for user:', this.email);
+    console.log('Original password (before hash):', this.password);
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     console.log('Password hashed successfully');
+    console.log('Hashed password (after hash):', this.password);
     next();
   } catch (error) {
     console.error('Error hashing password:', error);

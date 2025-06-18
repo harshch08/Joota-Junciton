@@ -368,13 +368,21 @@ const resetPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    console.log('Before password reset:', {
+      email: user.email,
+      oldPasswordHash: user.password,
+      newPasswordPlain: newPassword
+    });
 
-    // Update user password
-    user.password = hashedPassword;
+    // Update user password (will be hashed by the User model middleware)
+    user.password = newPassword;
+    console.log('Password set to plain text:', user.password);
+    
     await user.save();
+    console.log('After password reset:', {
+      email: user.email,
+      newPasswordHash: user.password
+    });
 
     // Delete the used OTP
     await Otp.deleteOne({ email, type: 'forgot-password' });
