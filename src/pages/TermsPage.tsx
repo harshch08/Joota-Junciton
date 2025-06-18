@@ -73,7 +73,7 @@ const TermsPage: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Shipping Information</h2>
               <div className="space-y-4 text-gray-600">
-                <p>We offer free shipping on all orders over ₹3,000. For orders below this amount, a standard shipping fee of ₹149 will apply.</p>
+                <p>We offer free shipping on all orders over ₹4,000. For orders below this amount, a standard shipping fee of ₹149 will apply.</p>
                 <p>Standard delivery typically takes 3-5 business days. Delivery times may vary depending on your location and the availability of the product.</p>
                 <p>We currently ship to all major cities and towns across India. For remote locations, delivery may take an additional 2-3 business days.</p>
                 <p>Once your order is shipped, you will receive a tracking number via email and SMS to track your package.</p>

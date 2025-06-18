@@ -11,6 +11,7 @@ interface OrderItem {
     _id: string;
     name: string;
     price: number;
+    discountedPrice?: number;
     images: string[];
     brand: string;
     hasReview?: boolean;
@@ -392,7 +393,16 @@ const OrdersPage: React.FC = () => {
                           </>
                         )}
                         <div className="text-right flex-shrink-0">
-                          <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.price)}</p>
+                          <div className="text-right">
+                            {item.product.discountedPrice ? (
+                              <div>
+                                <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.product.discountedPrice)}</p>
+                                <p className="text-xs text-gray-500 line-through">{formatCurrency(item.product.price)}</p>
+                              </div>
+                            ) : (
+                              <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.product.price)}</p>
+                            )}
+                          </div>
                           {order.status === 'delivered' && item.product && (
                             <button
                               className={`mt-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-semibold shadow-sm transition-colors border focus:outline-none focus:ring-2 focus:ring-offset-2 ${

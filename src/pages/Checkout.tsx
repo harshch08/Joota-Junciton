@@ -98,7 +98,7 @@ const Checkout = () => {
   };
 
   // Calculate shipping cost based on total
-  const shippingCost = total >= 3000 ? 0 : 149;
+  const shippingCost = total >= 4000 ? 0 : 149;
   const finalTotal = total + shippingCost;
 
   const handleSubmit = async (e: React.FormEvent) => {

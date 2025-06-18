@@ -38,6 +38,9 @@ const ProductDetails: React.FC = () => {
     queryFn: () => productsAPI.getProductById(productId || '')
   });
 
+  // Calculate total stock for the product
+  const totalStock = product?.sizes.reduce((sum, sizeObj) => sum + sizeObj.stock, 0);
+
   const { data: reviews = [], isLoading: reviewsLoading, refetch: refetchReviews } = useQuery({
     queryKey: ['reviews', productId],
     queryFn: async () => {
@@ -495,6 +498,12 @@ const ProductDetails: React.FC = () => {
         </div>
         {/* PRODUCT INFO */}
         <div className="space-y-8 bg-white rounded-2xl shadow-lg p-6 md:p-10 border border-gray-100">
+          {/* Low Stock Message for Desktop */}
+          {totalStock !== undefined && totalStock <= 5 && totalStock > 0 && (
+            <p className="text-red-600 mb-2 font-semibold text-lg">
+              Please hurry! Only {totalStock} left in stock
+            </p>
+          )}
           <div className="flex flex-col gap-2">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{product.name}</h1>
             <div className="flex items-center gap-3 mt-1">
@@ -559,7 +568,7 @@ const ProductDetails: React.FC = () => {
             <details className="bg-gray-50 rounded-lg p-4">
               <summary className="font-semibold cursor-pointer">Shipping & Returns</summary>
               <div className="mt-2 text-gray-600 space-y-2 text-sm">
-                <p>Free shipping on all orders over ₹3,000. Standard delivery within 3-5 business days.</p>
+                <p>Free shipping on all orders over ₹4,000. Standard delivery within 3-5 business days.</p>
                 <p>Easy 7-day returns. If you're not completely satisfied with your purchase, you can return it within 7 days of delivery.</p>
                 <p>
                   <Link to="/terms" className="text-black hover:underline font-medium">
@@ -573,7 +582,7 @@ const ProductDetails: React.FC = () => {
           <div className="hidden md:block">
             <h2 className="text-sm font-semibold text-gray-900">Shipping & Returns</h2>
             <div className="mt-2 space-y-2 text-gray-600 text-sm">
-              <p>Free shipping on all orders over ₹3,000. Standard delivery within 3-5 business days.</p>
+              <p>Free shipping on all orders over ₹4,000. Standard delivery within 3-5 business days.</p>
               <p>Easy 7-day returns. If you're not completely satisfied with your purchase, you can return it within 7 days of delivery.</p>
               <p>
                 <Link to="/terms" className="text-black hover:underline font-medium">

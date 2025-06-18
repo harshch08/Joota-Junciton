@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Separator } from './ui/separator';
 import { toast } from 'sonner';
 import OtpVerification from './OtpVerification';
+import ForgotPassword from './ForgotPassword';
 import { API_URL } from '../config';
 
 interface AuthModalProps {
@@ -23,11 +24,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login, register } = useAuth();
 
   useEffect(() => {
     if (!isOpen) {
       setShowOtpVerification(false);
+      setShowForgotPassword(false);
       setIsLogin(true);
       setEmail('');
       setPassword('');
@@ -77,6 +80,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setIsLogin(value === 'login');
     setError('');
     setShowOtpVerification(false);
+    setShowForgotPassword(false);
   };
 
   const handleVerificationComplete = () => {
@@ -86,6 +90,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const handleBack = () => {
     setShowOtpVerification(false);
+  };
+
+  const handleForgotPasswordComplete = () => {
+    onClose();
+    toast.success('Password reset successfully!');
+  };
+
+  const handleForgotPasswordBack = () => {
+    setShowForgotPassword(false);
   };
 
   return (
@@ -107,6 +120,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             name={name}
             onVerificationComplete={handleVerificationComplete}
             onBack={handleBack}
+          />
+        ) : showForgotPassword ? (
+          <ForgotPassword
+            onBack={handleForgotPasswordBack}
+            onComplete={handleForgotPasswordComplete}
           />
         ) : (
           <Tabs defaultValue="login" onValueChange={handleTabChange} className="w-full">
@@ -153,6 +171,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Signing in...' : 'Sign In'}
                   </Button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
                 </form>
               </div>
             </TabsContent>

@@ -218,7 +218,16 @@ const Header: React.FC<HeaderProps> = ({
                             />
                             <div>
                               <div className="font-medium text-gray-900">{product.name}</div>
-                              <div className="text-sm text-gray-500">₹{product.price.toLocaleString()}</div>
+                              <div className="text-sm text-gray-500">
+                                {product.discountedPrice ? (
+                                  <div>
+                                    <span className="text-gray-900 font-medium">₹{product.discountedPrice.toLocaleString()}</span>
+                                    <span className="text-gray-400 line-through ml-2">₹{product.price.toLocaleString()}</span>
+                                  </div>
+                                ) : (
+                                  <span>₹{product.price.toLocaleString()}</span>
+                                )}
+                              </div>
                             </div>
                           </button>
                         ))}
@@ -380,7 +389,16 @@ const Header: React.FC<HeaderProps> = ({
                             />
                             <div>
                               <div className="font-medium text-gray-900">{product.name}</div>
-                              <div className="text-sm text-gray-500">₹{product.price.toLocaleString()}</div>
+                              <div className="text-sm text-gray-500">
+                                {product.discountedPrice ? (
+                                  <div>
+                                    <span className="text-gray-900 font-medium">₹{product.discountedPrice.toLocaleString()}</span>
+                                    <span className="text-gray-400 line-through ml-2">₹{product.price.toLocaleString()}</span>
+                                  </div>
+                                ) : (
+                                  <span>₹{product.price.toLocaleString()}</span>
+                                )}
+                              </div>
                             </div>
                           </button>
                         ))}

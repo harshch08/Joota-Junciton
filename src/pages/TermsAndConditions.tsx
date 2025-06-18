@@ -46,7 +46,7 @@ const TermsAndConditions = () => {
             <section>
               <h3 className="text-lg font-semibold mb-2">Shipping, Returns, and Refunds</h3>
               <p className="text-gray-700">
-                Orders are typically processed within 1–3 business days. We offer flat-rate shipping of ₹149 for orders below ₹3000, while orders above ₹3000 qualify for free shipping. For full details, please refer to our Shipping Policy. Information regarding cancellations, returns, and refunds can be found in our Return & Refund Policy, which forms part of these Terms.
+                Orders are typically processed within 1–3 business days. We offer flat-rate shipping of ₹149 for orders below ₹4000, while orders above ₹4000 qualify for free shipping. For full details, please refer to our Shipping Policy. Information regarding cancellations, returns, and refunds can be found in our Return & Refund Policy, which forms part of these Terms.
               </p>
             </section>
 

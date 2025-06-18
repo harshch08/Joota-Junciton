@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const Otp = require('../models/Otp');
-const { sendOtpEmail } = require('../services/emailService');
+const { sendOtpEmail, sendForgotPasswordEmail } = require('../services/emailService');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
@@ -212,8 +212,192 @@ const verifyOtpAndRegister = async (req, res) => {
   }
 };
 
+// Generate forgot password OTP
+const generateForgotPasswordOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    console.log('Generate forgot password OTP request received:', { email });
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.log('Invalid email format:', email);
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (!existingUser) {
+      console.log('User not found:', email);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log('Generated forgot password OTP for:', email);
+
+    try {
+      // Delete any existing forgot password OTP for this email
+      await Otp.deleteOne({ email, type: 'forgot-password' });
+      console.log('Deleted existing forgot password OTP for:', email);
+
+      // Save new OTP
+      const otpRecord = await Otp.create({ 
+        email, 
+        otp, 
+        type: 'forgot-password' 
+      });
+      console.log('Saved new forgot password OTP record:', { email, otpId: otpRecord._id });
+
+      // Send OTP via email
+      await sendForgotPasswordEmail(email, otp);
+      console.log('Forgot password OTP email sent successfully to:', email);
+
+      res.status(200).json({ 
+        message: 'OTP sent successfully',
+        success: true
+      });
+    } catch (dbError) {
+      console.error('Database operation failed:', dbError);
+      throw new Error('Failed to save or send OTP');
+    }
+  } catch (error) {
+    console.error('Error in generateForgotPasswordOtp:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      message: 'Failed to generate OTP',
+      success: false,
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+};
+
+// Verify forgot password OTP
+const verifyForgotPasswordOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    console.log('Verify forgot password OTP request received:', { email });
+
+    // Validate input
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Find the OTP record
+    const otpRecord = await Otp.findOne({ email, type: 'forgot-password' });
+    if (!otpRecord) {
+      return res.status(400).json({ message: 'No OTP found for this email. Please generate a new OTP.' });
+    }
+
+    // Check if OTP has expired (10 minutes)
+    if (otpRecord.isExpired()) {
+      await Otp.deleteOne({ email, type: 'forgot-password' });
+      return res.status(400).json({ message: 'OTP has expired. Please generate a new OTP.' });
+    }
+
+    // Verify OTP
+    if (otpRecord.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
+    }
+
+    console.log('Forgot password OTP verified successfully for:', email);
+    res.status(200).json({ 
+      message: 'OTP verified successfully',
+      success: true
+    });
+  } catch (error) {
+    console.error('Error in verifyForgotPasswordOtp:', error);
+    res.status(500).json({ 
+      message: 'Failed to verify OTP',
+      success: false
+    });
+  }
+};
+
+// Reset password
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    console.log('Reset password request received:', { email });
+
+    // Validate input
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'Email, OTP, and new password are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Validate password length
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    // Find the OTP record
+    const otpRecord = await Otp.findOne({ email, type: 'forgot-password' });
+    if (!otpRecord) {
+      return res.status(400).json({ message: 'No OTP found for this email. Please generate a new OTP.' });
+    }
+
+    // Check if OTP has expired (10 minutes)
+    if (otpRecord.isExpired()) {
+      await Otp.deleteOne({ email, type: 'forgot-password' });
+      return res.status(400).json({ message: 'OTP has expired. Please generate a new OTP.' });
+    }
+
+    // Verify OTP
+    if (otpRecord.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
+    }
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update user password
+    user.password = hashedPassword;
+    await user.save();
+
+    // Delete the used OTP
+    await Otp.deleteOne({ email, type: 'forgot-password' });
+
+    console.log('Password reset successfully for:', email);
+    res.status(200).json({ 
+      message: 'Password reset successfully',
+      success: true
+    });
+  } catch (error) {
+    console.error('Error in resetPassword:', error);
+    res.status(500).json({ 
+      message: 'Failed to reset password',
+      success: false
+    });
+  }
+};
+
 module.exports = {
   generateOtp,
   verifyOtpAndRegister,
-  login
+  login,
+  generateForgotPasswordOtp,
+  verifyForgotPasswordOtp,
+  resetPassword
 }; 

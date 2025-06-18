@@ -62,15 +62,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onAu
             {Math.round(((product.price - product.discountedPrice) / product.price) * 100)}% OFF
           </div>
         )}
-        <div className="absolute top-2 left-2 z-10">
-          {product.featured && (
-            <Badge 
-              className="bg-black text-white hover:bg-black/90"
-            >
-              Featured
-            </Badge>
-          )}
-        </div>
       </div>
 
       {/* Product Info */}

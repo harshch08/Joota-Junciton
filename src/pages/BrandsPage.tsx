@@ -132,11 +132,16 @@ const BrandsPage: React.FC<BrandsPageProps> = ({ isNavigation = false }) => {
               }}
             >
               <div className="absolute inset-0 flex items-center justify-center p-3">
-                <img
-                  src={`/images/logo/${getBrandLogo(brand.name)}`}
-                  alt={brand.name}
-                  className="max-w-full max-h-full object-contain"
-                />
+                <div className="aspect-square relative">
+                  <img
+                    src={brand.logo || 'https://via.placeholder.com/150'}
+                    alt={brand.name}
+                    className="w-full h-full object-contain p-4"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/150';
+                    }}
+                  />
+                </div>
               </div>
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
                 <h3 className="text-white font-medium text-sm truncate">{brand.name}</h3>

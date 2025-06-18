@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
-const { generateOtp, verifyOtpAndRegister, login } = require('../controllers/authController');
+const { generateOtp, verifyOtpAndRegister, login, generateForgotPasswordOtp, verifyForgotPasswordOtp, resetPassword } = require('../controllers/authController');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -197,5 +197,10 @@ router.post('/generate-otp', generateOtp);
 
 // Verify OTP and register
 router.post('/verify-otp', verifyOtpAndRegister);
+
+// Forgot Password Routes
+router.post('/forgot-password', generateForgotPasswordOtp);
+router.post('/verify-forgot-password-otp', verifyForgotPasswordOtp);
+router.post('/reset-password', resetPassword);
 
 module.exports = router; 

@@ -13,19 +13,29 @@ const otpSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  type: {
+    type: String,
+    enum: ['registration', 'forgot-password'],
+    default: 'registration'
+  },
   createdAt: {
     type: Date,
-    default: Date.now,
-    expires: 300 // 5 minutes in seconds
+    default: Date.now
   }
 });
 
 // Add index for faster queries
-otpSchema.index({ email: 1, createdAt: -1 });
+otpSchema.index({ email: 1, type: 1, createdAt: -1 });
 
 // Add method to check if OTP is expired
 otpSchema.methods.isExpired = function() {
-  return (Date.now() - this.createdAt.getTime()) > 300000; // 5 minutes in milliseconds
+  const expirationTime = this.type === 'forgot-password' ? 600000 : 300000; // 10 minutes for forgot-password, 5 minutes for registration
+  return (Date.now() - this.createdAt.getTime()) > expirationTime;
+};
+
+// Add method to get expiration time in minutes
+otpSchema.methods.getExpirationMinutes = function() {
+  return this.type === 'forgot-password' ? 10 : 5;
 };
 
 const Otp = mongoose.model('Otp', otpSchema);

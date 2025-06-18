@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { productsAPI } from '../services/api';
-import { Product } from '../types';
+import { productsAPI, categoriesAPI } from '../services/api';
+import { Product, Category } from '../types';
 
 const priceRanges = [
   { label: 'Under ₹2,000', min: 0, max: 2000 },
@@ -42,8 +42,12 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     queryFn: () => productsAPI.getAllProducts()
   });
 
-  // Get unique categories and brands from products
-  const categories = ['All', ...new Set(products.map(product => product.category).filter(Boolean))];
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ['categories'],
+    queryFn: () => categoriesAPI.getAllCategories()
+  });
+
+  // Get unique brands from products
   const brands = ['All', ...new Set(products.map(product => product.brand).filter(Boolean))];
 
   const handleApplyFilters = () => {
@@ -78,17 +82,27 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               <div className="mb-8">
                 <h3 className="text-sm font-medium text-gray-900 mb-4">Categories</h3>
                 <div className="space-y-2">
+                  <button
+                    onClick={() => setTempCategory('All')}
+                    className={`block w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      tempCategory === 'All'
+                        ? 'text-white bg-black'
+                        : 'text-gray-700 hover:text-black hover:bg-gray-100'
+                    }`}
+                  >
+                    All
+                  </button>
                   {categories.map((category) => (
                     <button
-                      key={category}
-                      onClick={() => setTempCategory(category)}
+                      key={category._id}
+                      onClick={() => setTempCategory(category.name)}
                       className={`block w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        tempCategory === category
+                        tempCategory === category.name
                           ? 'text-white bg-black'
                           : 'text-gray-700 hover:text-black hover:bg-gray-100'
                       }`}
                     >
-                      {category}
+                      {category.name}
                     </button>
                   ))}
                 </div>
@@ -115,9 +129,19 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               </div>
 
               {/* Price Ranges */}
-              <div>
+              <div className="mb-8">
                 <h3 className="text-sm font-medium text-gray-900 mb-4">Price Range</h3>
                 <div className="space-y-2">
+                  <button
+                    onClick={() => setTempPriceRange('All')}
+                    className={`block w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      tempPriceRange === 'All'
+                        ? 'text-white bg-black'
+                        : 'text-gray-700 hover:text-black hover:bg-gray-100'
+                    }`}
+                  >
+                    All Prices
+                  </button>
                   {priceRanges.map((range) => (
                     <button
                       key={range.label}
@@ -135,10 +159,10 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               </div>
             </div>
 
-            <div className="px-4 py-6 sm:px-6 border-t border-gray-200">
+            <div className="border-t border-gray-200 px-4 py-6 sm:px-6">
               <button
                 onClick={handleApplyFilters}
-                className="w-full bg-black text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+                className="w-full bg-black text-white px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors"
               >
                 Apply Filters
               </button>

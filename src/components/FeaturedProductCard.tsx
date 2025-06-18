@@ -39,7 +39,7 @@ const FeaturedProductCard: React.FC<FeaturedProductCardProps> = ({ product, onPr
     if (user) {
       try {
         // Check stock availability
-        const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/products/${product._id || product.id}`);
+        const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/products/${product._id}`);
         if (response.ok) {
           const productData = await response.json();
           const sizeObj = productData.sizes?.find((s: any) => s.size === size);
@@ -55,7 +55,7 @@ const FeaturedProductCard: React.FC<FeaturedProductCardProps> = ({ product, onPr
           }
 
           addToCart({
-            id: product._id || product.id || '',
+            id: product._id,
             name: product.name,
             price: product.price,
             image: product.images[0],
@@ -85,13 +85,13 @@ const FeaturedProductCard: React.FC<FeaturedProductCardProps> = ({ product, onPr
     <div
       className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer relative overflow-hidden border border-gray-100"
       onClick={() => {
-        navigate(`/product/${product._id || product.id}`);
+        navigate(`/product/${product._id}`);
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Featured Badge */}
-      <div className="absolute top-2 left-2 z-10">
+      <div className="absolute top-2 right-2 z-10">
         <Badge 
           className="bg-black text-white hover:bg-black/90"
         >
@@ -109,6 +109,13 @@ const FeaturedProductCard: React.FC<FeaturedProductCardProps> = ({ product, onPr
           }`}
         />
         
+        {/* Discount Badge */}
+        {product.discountedPrice && (
+          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+            {Math.round(((product.price - product.discountedPrice) / product.price) * 100)}% OFF
+          </div>
+        )}
+
         {/* Sale Badge */}
         {product.originalPrice && (
           <div className="absolute top-3 right-3 bg-black text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
@@ -137,9 +144,13 @@ const FeaturedProductCard: React.FC<FeaturedProductCardProps> = ({ product, onPr
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="text-lg font-bold text-black">{formatIndianCurrency(product.price)}</span>
-            {product.originalPrice && (
-              <span className="text-sm text-gray-400 line-through">{formatIndianCurrency(product.originalPrice)}</span>
+            {product.discountedPrice ? (
+              <>
+                <span className="text-lg font-bold text-black">{formatIndianCurrency(product.discountedPrice)}</span>
+                <span className="text-sm text-gray-400 line-through">{formatIndianCurrency(product.price)}</span>
+              </>
+            ) : (
+              <span className="text-lg font-bold text-black">{formatIndianCurrency(product.price)}</span>
             )}
           </div>
           {product.category && (

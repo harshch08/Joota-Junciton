@@ -42,6 +42,13 @@ import { Label } from "@/components/ui/label";
 import { categoriesAPI } from '@/services/api';
 import { toast } from "@/components/ui/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DashboardStats {
   totalUsers: number;
@@ -295,6 +302,10 @@ const AdminDashboard: React.FC = () => {
     description: '', 
     image: '' 
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -308,7 +319,9 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchProducts();
+    if (!isSearching) {
+      fetchProducts();
+    }
   }, [currentPage]);
 
   // Initialize local inventory when modal opens
@@ -345,19 +358,64 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (search = '') => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/products?page=${currentPage}&limit=10`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data.products || []);
-        setPagination(data.pagination);
+      
+      if (search) {
+        // When searching, fetch all products to filter client-side
+        console.log('Searching for:', search);
+        const url = new URL(`${import.meta.env.VITE_API_URL}/api/admin/products`);
+        url.searchParams.append('limit', '1000'); // Get all products for search
+        
+        console.log('Fetching all products for search with URL:', url.toString());
+        
+        const response = await fetch(url.toString(), {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const allProductsData = data.products || [];
+          console.log('All products fetched:', allProductsData.length);
+          
+          // Filter products client-side
+          const filtered = allProductsData.filter((product: Product) => 
+            product.name.toLowerCase().includes(search.toLowerCase())
+          );
+          
+          console.log('Filtered products:', filtered.length);
+          console.log('Filtered product names:', filtered.map(p => p.name));
+          
+          setAllProducts(allProductsData);
+          setFilteredProducts(filtered);
+          setProducts(filtered);
+          setPagination(null); // Hide pagination during search
+        }
+      } else {
+        // Normal paginated fetch
+        const url = new URL(`${import.meta.env.VITE_API_URL}/api/admin/products`);
+        url.searchParams.append('page', currentPage.toString());
+        url.searchParams.append('limit', '10');
+        
+        console.log('Fetching paginated products with URL:', url.toString());
+        
+        const response = await fetch(url.toString(), {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Paginated products received:', data.products?.length || 0, 'products');
+          setProducts(data.products || []);
+          setPagination(data.pagination);
+        } else {
+          console.log('Error response:', response.status, response.statusText);
+        }
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -492,6 +550,48 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleAddProduct = async () => {
+    // Validation
+    if (!newProduct.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Product name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!newProduct.brand) {
+      toast({
+        title: "Error",
+        description: "Please select a brand",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!newProduct.category) {
+      toast({
+        title: "Error",
+        description: "Please select a category",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!newProduct.price || parseFloat(newProduct.price) <= 0) {
+      toast({
+        title: "Error",
+        description: "Valid price is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!newProduct.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Product description is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const token = localStorage.getItem('adminToken');
       const formData = new FormData();
@@ -517,6 +617,10 @@ const AdminDashboard: React.FC = () => {
         body: formData
       });
       if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Product added successfully",
+        });
         setNewProduct({
           name: '',
           brand: '',
@@ -528,14 +632,69 @@ const AdminDashboard: React.FC = () => {
           description: '',
         });
         fetchProducts();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.message || "Failed to add product",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error adding product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add product. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleUpdateProduct = async () => {
     if (!editingProduct) return;
+    
+    // Validation
+    if (!newProduct.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Product name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!newProduct.brand) {
+      toast({
+        title: "Error",
+        description: "Please select a brand",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!newProduct.category) {
+      toast({
+        title: "Error",
+        description: "Please select a category",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!newProduct.price || parseFloat(newProduct.price) <= 0) {
+      toast({
+        title: "Error",
+        description: "Valid price is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!newProduct.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Product description is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const token = localStorage.getItem('adminToken');
       const formData = new FormData();
@@ -559,6 +718,10 @@ const AdminDashboard: React.FC = () => {
         body: formData
       });
       if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Product updated successfully",
+        });
         setEditingProduct(null);
         setNewProduct({
           name: '',
@@ -571,9 +734,21 @@ const AdminDashboard: React.FC = () => {
           description: '',
         });
         fetchProducts();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update product",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error updating product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update product. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1198,6 +1373,87 @@ const AdminDashboard: React.FC = () => {
     setShowCategoryModal(true);
   };
 
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      console.log('Search triggered with query:', searchQuery.trim());
+      setIsSearching(true);
+      setCurrentPage(1);
+      fetchProducts(searchQuery.trim());
+    }
+  };
+
+  const handleClearSearch = () => {
+    console.log('Clear search triggered');
+    setSearchQuery('');
+    setIsSearching(false);
+    setCurrentPage(1);
+    setFilteredProducts([]);
+    fetchProducts(''); // This will fetch paginated products
+  };
+
+  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const fetchSingleProduct = async (productId: string) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/products/${productId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+    } catch (error) {
+      console.error('Error fetching product:', error);
+    }
+    return null;
+  };
+
+  const handleUpdateStockFromOverview = async (product: LowStockProduct) => {
+    console.log('Update Stock button clicked for product:', product);
+    try {
+      const fullProduct = await fetchSingleProduct(product._id);
+      console.log('Fetched full product:', fullProduct);
+      if (fullProduct) {
+        setManagingInventory(fullProduct);
+        setLocalInventory({});
+        fullProduct.sizes.forEach(size => {
+          setLocalInventory(prev => ({
+            ...prev,
+            [size.size]: size.stock
+          }));
+        });
+        console.log('Stock update modal should be open now');
+      } else {
+        // Fallback: try to find in products array
+        console.log('Trying fallback - searching in products array');
+        const productToEdit = products.find(p => p._id === product._id);
+        console.log('Found product in array:', productToEdit);
+        if (productToEdit) {
+          setManagingInventory(productToEdit);
+          setLocalInventory({});
+          productToEdit.sizes.forEach(size => {
+            setLocalInventory(prev => ({
+              ...prev,
+              [size.size]: size.stock
+            }));
+          });
+          console.log('Stock update modal should be open now (fallback)');
+        } else {
+          console.log('Product not found in either location');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating stock:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1377,16 +1633,10 @@ const AdminDashboard: React.FC = () => {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              onClick={() => {
-                              setActiveTab('products');
-                              const productToEdit = products.find(p => p._id === product._id);
-                              if (productToEdit) {
-                                handleEditProduct(productToEdit);
-                              }
-                              }}
-                              className="text-xs px-2 py-1 h-7 sm:h-8"
+                              onClick={() => handleUpdateStockFromOverview(product)}
+                              className="text-xs px-2 py-1 h-7 sm:h-8 text-blue-600 hover:text-blue-700"
                             >
-                              <Edit className="h-3 w-3 mr-1" />
+                              <Package className="h-3 w-3 mr-1" />
                               <span className="hidden sm:inline">Update Stock</span>
                               <span className="sm:hidden">Update</span>
                             </Button>
@@ -1487,21 +1737,55 @@ const AdminDashboard: React.FC = () => {
               <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg px-4 sm:px-6 py-3 sm:py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                   <CardTitle className="text-base sm:text-lg lg:text-xl">Products Management</CardTitle>
-                  <Button 
-                    onClick={() => {
-                      setEditingProduct(null);
-                      setNewProduct({ name: '', brand: '', price: '', discountedPrice: '', category: '', images: null, sizes: '', description: '' });
-                      setShowProductModal(true);
-                    }}
-                    className="bg-white text-blue-600 hover:bg-gray-100 text-xs sm:text-sm px-3 sm:px-4 py-2 h-8 sm:h-9"
-                  >
-                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                    <span className="hidden sm:inline">Add Product</span>
-                    <span className="sm:hidden">Add</span>
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-center">
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="text"
+                        placeholder="Search products..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleSearchKeyPress}
+                        style={{ color: 'black', backgroundColor: 'white' }}
+                        className="w-36 sm:w-48 text-black bg-white border-gray-300"
+                      />
+                      <Button 
+                        onClick={handleSearch} 
+                        className="bg-white text-blue-600 hover:bg-gray-100 text-xs sm:text-sm px-3 py-2 h-8 sm:h-9"
+                      >
+                        Search
+                      </Button>
+                      {isSearching && (
+                        <Button 
+                          onClick={handleClearSearch} 
+                          className="bg-white text-gray-600 hover:bg-gray-100 text-xs sm:text-sm px-2 py-2 h-8 sm:h-9"
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        setEditingProduct(null);
+                        setNewProduct({ name: '', brand: '', price: '', discountedPrice: '', category: '', images: null, sizes: '', description: '' });
+                        setShowProductModal(true);
+                      }}
+                      className="bg-white text-blue-600 hover:bg-gray-100 text-xs sm:text-sm px-3 sm:px-4 py-2 h-8 sm:h-9"
+                    >
+                      <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      <span className="hidden sm:inline">Add Product</span>
+                      <span className="sm:hidden">Add</span>
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
+                {isSearching && (
+                  <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+                    <p className="text-sm text-blue-800">
+                      Search results for "{searchQuery}" - {products.length} product{products.length !== 1 ? 's' : ''} found
+                    </p>
+                  </div>
+                )}
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -1582,7 +1866,7 @@ const AdminDashboard: React.FC = () => {
                       ))}
                     </TableBody>
                   </Table>
-                  {pagination && (
+                  {pagination && !isSearching && (
                     <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4">
                       <div className="flex-1 flex justify-between sm:hidden">
                         <button
@@ -1667,14 +1951,24 @@ const AdminDashboard: React.FC = () => {
                       {brands.map((brand) => (
                         <TableRow key={brand._id} className="hover:bg-gray-50">
                           <TableCell className="px-2 sm:px-6">
-                            <img 
-                              src={`/images/logo/${getBrandLogo(brand.name)}`}
-                              alt={brand.name} 
-                              className="w-8 h-8 object-contain rounded"
-                            />
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 relative">
+                                <img
+                                  src={brand.logo || 'https://via.placeholder.com/150'}
+                                  alt={brand.name}
+                                  className="w-full h-full object-contain rounded-lg"
+                                  onError={(e) => {
+                                    e.currentTarget.src = 'https://via.placeholder.com/150';
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-gray-900">{brand.name}</h3>
+                                <p className="text-sm text-gray-500">{brand.description}</p>
+                              </div>
+                            </div>
                           </TableCell>
-                          <TableCell className="font-medium text-xs sm:text-sm px-2 sm:px-6">{brand.name}</TableCell>
-                          <TableCell className="text-xs sm:text-sm px-2 sm:px-6 hidden sm:table-cell">{brand.description}</TableCell>
+                          <TableCell className="px-2 sm:px-6">{brand.description}</TableCell>
                           <TableCell className="px-2 sm:px-6">
                             <Badge variant={brand.isActive ? "default" : "secondary"}>
                               {brand.isActive ? "Active" : "Inactive"}
@@ -2309,11 +2603,24 @@ const AdminDashboard: React.FC = () => {
               value={newProduct.name}
               onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
             />
-            <Input
-              placeholder="Brand"
-              value={newProduct.brand}
-              onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="brand">Brand *</Label>
+              <Select
+                value={newProduct.brand}
+                onValueChange={(value) => setNewProduct({...newProduct, brand: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  {brands.map((brand) => (
+                    <SelectItem key={brand._id} value={brand.name}>
+                      {brand.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Input
               placeholder="Original Price (₹)"
               type="number"
@@ -2326,11 +2633,24 @@ const AdminDashboard: React.FC = () => {
               value={newProduct.discountedPrice}
               onChange={(e) => setNewProduct({...newProduct, discountedPrice: e.target.value})}
             />
-            <Input
-              placeholder="Category"
-              value={newProduct.category}
-              onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="category">Category *</Label>
+              <Select
+                value={newProduct.category}
+                onValueChange={(value) => setNewProduct({...newProduct, category: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category._id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <input
               type="file"
               multiple
@@ -2551,65 +2871,65 @@ const AdminDashboard: React.FC = () => {
 
       {/* Inventory Management Modal */}
       <Dialog open={!!managingInventory} onOpenChange={() => setManagingInventory(null)}>
-        <DialogContent className="max-w-md w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader className="pb-4">
-            <DialogTitle className="text-lg sm:text-xl">Manage Inventory</DialogTitle>
-            <DialogDescription className="text-sm">
+        <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto p-3 sm:p-6 mx-2 sm:mx-auto">
+          <DialogHeader className="pb-3 sm:pb-4">
+            <DialogTitle className="text-base sm:text-xl">Manage Inventory</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Update stock levels for {managingInventory?.name}
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {managingInventory && (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Product Info Card */}
-                <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-start space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
                   <img
                     src={managingInventory.images[0] || 'https://via.placeholder.com/60'}
                     alt={managingInventory.name}
-                    className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded flex-shrink-0"
+                    className="w-10 h-10 sm:w-16 sm:h-16 object-cover rounded flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm sm:text-base text-gray-900 truncate">
+                    <h4 className="font-medium text-xs sm:text-base text-gray-900 truncate">
                       {managingInventory.name}
                     </h4>
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">{managingInventory.brand}</p>
-                    <p className="text-sm sm:text-base font-semibold text-green-600">
+                    <p className="text-xs text-gray-600 truncate">{managingInventory.brand}</p>
+                    <p className="text-xs sm:text-base font-semibold text-green-600">
                       {formatIndianCurrency(managingInventory.price)}
                     </p>
                   </div>
                 </div>
 
                 {/* Size & Stock Management */}
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <h5 className="font-medium text-sm sm:text-base text-gray-900">Size & Stock Management</h5>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                  <div className="space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
                     {managingInventory.sizes.map((size) => (
-                      <div key={size.size} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-white">
-                        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
-                          <span className="font-medium text-sm sm:text-base whitespace-nowrap">Size {size.size}</span>
-                          <span className="text-xs sm:text-sm text-gray-600 truncate">
+                      <div key={size.size} className="flex items-center justify-between p-2 sm:p-3 border border-gray-200 rounded-lg bg-white">
+                        <div className="flex items-center space-x-1 sm:space-x-3 min-w-0 flex-1">
+                          <span className="font-medium text-xs sm:text-base whitespace-nowrap">Size {size.size}</span>
+                          <span className="text-xs text-gray-600 truncate">
                             Current: {localInventory[size.size] || 0}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                        <div className="flex items-center space-x-1 flex-shrink-0">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleInventoryChange(size.size, -1)}
                             disabled={!localInventory[size.size] || localInventory[size.size] <= 0}
-                            className="w-7 h-7 sm:w-8 sm:h-8 p-0"
+                            className="w-6 h-6 sm:w-8 sm:h-8 p-0"
                           >
                             <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
-                          <span className="w-10 sm:w-12 text-center text-sm sm:text-base font-medium">
+                          <span className="w-8 sm:w-12 text-center text-xs sm:text-base font-medium">
                             {localInventory[size.size] || 0}
                           </span>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleInventoryChange(size.size, 1)}
-                            className="w-7 h-7 sm:w-8 sm:h-8 p-0"
+                            className="w-6 h-6 sm:w-8 sm:h-8 p-0"
                           >
                             <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
@@ -2620,10 +2940,10 @@ const AdminDashboard: React.FC = () => {
                 </div>
 
                 {/* Total Stock Summary */}
-                <div className="pt-3 border-t border-gray-200 bg-gray-50 p-3 rounded-lg">
+                <div className="pt-2 sm:pt-3 border-t border-gray-200 bg-gray-50 p-2 sm:p-3 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm sm:text-base font-medium text-gray-900">Total Stock:</span>
-                    <span className="text-sm sm:text-base font-semibold text-blue-600">
+                    <span className="text-xs sm:text-base font-medium text-gray-900">Total Stock:</span>
+                    <span className="text-xs sm:text-base font-semibold text-blue-600">
                       {Object.values(localInventory).reduce((sum, stock) => sum + (stock || 0), 0)}
                     </span>
                   </div>
@@ -2632,7 +2952,7 @@ const AdminDashboard: React.FC = () => {
             )}
           </div>
 
-          <DialogFooter className="mt-6 pt-4 border-t border-gray-200">
+          <DialogFooter className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
             <DialogClose asChild>
               <Button variant="outline" className="w-full sm:w-auto">
                 Close
