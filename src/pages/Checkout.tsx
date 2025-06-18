@@ -121,7 +121,8 @@ const Checkout = () => {
           product: item.id,
           size: parseInt(item.size),
           quantity: item.quantity || 1,
-          price: item.price
+          price: item.price,
+          discountedPrice: item.discountedPrice || null
         })),
         shippingAddress: {
           street: formData.address,
@@ -275,7 +276,8 @@ const Checkout = () => {
           product: item.id,
           size: parseInt(item.size),
           quantity: item.quantity || 1,
-          price: item.price
+          price: item.price,
+          discountedPrice: item.discountedPrice || null
         })),
         shippingAddress: {
           street: formData.address,

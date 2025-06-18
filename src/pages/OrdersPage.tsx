@@ -19,6 +19,7 @@ interface OrderItem {
   size: number;
   quantity: number;
   price: number;
+  discountedPrice?: number;
 }
 
 interface Order {
@@ -394,13 +395,13 @@ const OrdersPage: React.FC = () => {
                         )}
                         <div className="text-right flex-shrink-0">
                           <div className="text-right">
-                            {item.product.discountedPrice ? (
+                            {item.discountedPrice ? (
                               <div>
-                                <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.product.discountedPrice)}</p>
-                                <p className="text-xs text-gray-500 line-through">{formatCurrency(item.product.price)}</p>
+                                <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.discountedPrice)}</p>
+                                <p className="text-xs text-gray-500 line-through">{formatCurrency(item.price)}</p>
                               </div>
                             ) : (
-                              <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.product.price)}</p>
+                              <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.price)}</p>
                             )}
                           </div>
                           {order.status === 'delivered' && item.product && (

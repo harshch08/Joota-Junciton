@@ -104,14 +104,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
-          </DialogTitle>
-          <DialogDescription className="text-center">
-            {isLogin ? 'Sign in to your account to continue' : 'Create a new account to get started'}
-          </DialogDescription>
-        </DialogHeader>
+        {!showForgotPassword && (
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl font-bold">
+              {isLogin ? 'Welcome Back' : 'Create Account'}
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              {isLogin ? 'Sign in to your account to continue' : 'Create a new account to get started'}
+            </DialogDescription>
+          </DialogHeader>
+        )}
 
         {showOtpVerification ? (
           <OtpVerification
@@ -175,7 +177,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
-                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                      className="text-sm text-gray-600 hover:text-gray-800 underline transition-colors"
                     >
                       Forgot Password?
                     </button>
@@ -191,7 +193,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     <Separator className="w-full" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or sign up with email</span>
+                    <span className="bg-background px-2 text-muted-foreground">sign up with email</span>
                   </div>
                 </div>
 

@@ -25,6 +25,10 @@ const orderSchema = new mongoose.Schema({
       type: Number,
       required: true,
     },
+    discountedPrice: {
+      type: Number,
+      default: null,
+    },
   }],
   shippingAddress: {
     street: {
