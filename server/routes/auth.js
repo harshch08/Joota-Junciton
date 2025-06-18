@@ -77,7 +77,7 @@ router.get('/profile', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
       .select('-password')
-      .populate('cart.productId');
+      .populate('cart.productId', 'name price discountedPrice images brand description');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -171,7 +171,7 @@ router.post('/cart', protect, async (req, res) => {
     console.log('Updated cart:', user.cart);
     
     // Populate product details before sending response
-    await user.populate('cart.productId');
+    await user.populate('cart.productId', 'name price discountedPrice images brand description');
     res.json(user.cart);
   } catch (error) {
     console.error('Cart update error:', error);
