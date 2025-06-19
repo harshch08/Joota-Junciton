@@ -9,12 +9,12 @@ const categorySchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true,
-    trim: true
+    trim: true,
+    default: ''
   },
   image: {
     type: String,
-    default: null
+    default: ''
   },
   isActive: {
     type: Boolean,
