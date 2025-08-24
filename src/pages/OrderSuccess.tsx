@@ -48,7 +48,7 @@ const OrderSuccess = () => {
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500">
-              A confirmation email has been sent to your email address with order details and tracking information.
+              A confirmation email will been sent to your email address with order details and tracking information.
             </p>
           </div>
         </div>

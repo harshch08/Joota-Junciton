@@ -4,6 +4,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast } from 'sonner';
 import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { API_URL } from '../config';
 
 interface ForgotPasswordProps {
   onBack: () => void;
@@ -27,7 +28,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/forgot-password`, {
+      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,7 +58,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/verify-forgot-password-otp`, {
+      const response = await fetch(`${API_URL}/api/auth/verify-forgot-password-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/reset-password`, {
+      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

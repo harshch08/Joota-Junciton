@@ -122,7 +122,7 @@ const Checkout = () => {
           size: parseInt(item.size),
           quantity: item.quantity || 1,
           price: item.price,
-          discountedPrice: item.discountedPrice || null
+          discountedPrice: item.discountedPrice !== undefined ? item.discountedPrice : null
         })),
         shippingAddress: {
           street: formData.address,
@@ -137,7 +137,7 @@ const Checkout = () => {
       };
 
       // Create order in MongoDB via API
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
+      const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ const Checkout = () => {
 
     try {
       // Create Razorpay order
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders/create-razorpay-order`, {
+      const res = await fetch(`${API_URL}/api/orders/create-razorpay-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -277,7 +277,7 @@ const Checkout = () => {
           size: parseInt(item.size),
           quantity: item.quantity || 1,
           price: item.price,
-          discountedPrice: item.discountedPrice || null
+          discountedPrice: item.discountedPrice !== undefined ? item.discountedPrice : null
         })),
         shippingAddress: {
           street: formData.address,
@@ -297,7 +297,7 @@ const Checkout = () => {
       };
 
       // Create order in database
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
+      const response = await fetch(`${API_URL}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -627,12 +627,13 @@ const Checkout = () => {
                   <span>{formatCurrency(finalTotal)}</span>
                 </div>
               </div>
-              {total < 3000 && (
+              {total < 4000 && (
                 <p className="text-sm text-gray-500 mt-2">
-                  Add {formatCurrency(3000 - total)} more to get free shipping!
+                  Add {formatCurrency(4000 - total)} more to get free shipping!
                 </p>
               )}
             </div>
+            
           </div>
         </div>
       </div>

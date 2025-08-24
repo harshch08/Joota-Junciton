@@ -49,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { brandsAPI } from '@/services/api';
 
 interface DashboardStats {
   totalUsers: number;
@@ -430,20 +431,10 @@ const AdminDashboard: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/brands`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setBrands(data.brands || data); // Handle both paginated and non-paginated responses
-      } else {
-        const error = await response.json();
-        console.error('Error fetching brands:', error.message);
-      }
+      // Use the brandsAPI.getAllBrandsAdmin() to get all brands (both active and inactive)
+      // This is needed for the product form dropdown to show all available brands
+      const brands = await brandsAPI.getAllBrandsAdmin();
+      setBrands(brands);
     } catch (error) {
       console.error('Error fetching brands:', error);
     }

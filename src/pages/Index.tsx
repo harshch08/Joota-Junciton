@@ -259,10 +259,8 @@ const Index = () => {
       </ScrollSection>
 
       {/* Main Content */}
-      <ScrollSection className="py-12 md:py-16 bg-gray-50" threshold={0.05}>
+      <section className="py-12 md:py-16 bg-gray-50" id="all-products">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* All Products */}
-        <section id="all-products">
           <div className="text-center mb-8 md:mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 relative inline-block">
               All Products
@@ -299,9 +297,8 @@ const Index = () => {
               <p className="text-gray-500">No products found matching your search criteria.</p>
             </div>
           )}
-        </section>
         </div>
-      </ScrollSection>
+      </section>
 
       <FilterSidebar
         isOpen={showFilters}

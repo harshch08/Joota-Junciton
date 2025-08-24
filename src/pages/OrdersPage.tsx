@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Package, Clock, Truck, CheckCircle, XCircle, MapPin, CreditCard, Calendar, Star } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, XCircle, MapPin, CreditCard, Calendar, Star, AlertCircle } from 'lucide-react';
 import Header from '../components/Header';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
 import { API_URL } from '../config';
@@ -89,7 +89,7 @@ const OrdersPage: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/orders`, {
+      const response = await fetch(`${API_URL}/api/orders`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -131,7 +131,7 @@ const OrdersPage: React.FC = () => {
       const productIds = orders.flatMap(order => order.items.map(item => item.product._id));
       // Fetch all reviews for each product
       const allReviews = await Promise.all(productIds.map(async (productId) => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/reviews/product/${productId}`);
+        const response = await fetch(`${API_URL}/api/reviews/product/${productId}`);
         if (!response.ok) return [];
         const data = await response.json();
         return data;
@@ -234,7 +234,7 @@ const OrdersPage: React.FC = () => {
       formData.append('message', reviewMessage);
       formData.append('rating', reviewRating.toString());
       reviewImages.forEach((file) => formData.append('images', file));
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/reviews`, {
+      const response = await fetch(`${API_URL}/api/reviews`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -395,13 +395,13 @@ const OrdersPage: React.FC = () => {
                         )}
                         <div className="text-right flex-shrink-0">
                           <div className="text-right">
-                            {item.discountedPrice ? (
-                              <div>
-                                <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.discountedPrice)}</p>
-                                <p className="text-xs text-gray-500 line-through">{formatCurrency(item.price)}</p>
+                            {item.discountedPrice !== undefined && item.discountedPrice !== null ? (
+                              <div className="flex flex-col items-end">
+                                <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.discountedPrice * item.quantity)}</p>
+                                <p className="text-xs text-gray-500 line-through">{formatCurrency(item.price * item.quantity)}</p>
                               </div>
                             ) : (
-                              <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.price)}</p>
+                              <p className="font-medium text-gray-900 text-sm sm:text-base">{formatCurrency(item.price * item.quantity)}</p>
                             )}
                           </div>
                           {order.status === 'delivered' && item.product && (
@@ -448,15 +448,19 @@ const OrdersPage: React.FC = () => {
                       </h4>
                       <div className="text-xs sm:text-sm text-gray-600 space-y-1">
                         <p>Method: {order.paymentMethod.replace('_', ' ').toUpperCase()}</p>
-                        <p>Subtotal: {formatCurrency(order.totalPrice - order.shippingPrice)}</p>
+                        <p>Subtotal: {formatCurrency(order.items.reduce((sum, item) => sum + ((item.discountedPrice !== undefined && item.discountedPrice !== null ? item.discountedPrice : item.price) * item.quantity), 0))}</p>
                         <p>Shipping: {formatCurrency(order.shippingPrice)}</p>
                         <p className="font-medium text-gray-900 text-sm sm:text-base">
-                          Total: {formatCurrency(order.totalPrice)}
+                          Total: {order.paymentMethod.toLowerCase() === 'cod'
+                            ? `${formatCurrency(order.totalPrice - 200)} (AFTER DEDUCTING COD FEE)`
+                            : formatCurrency(order.totalPrice)
+                          }
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
+              
               </div>
             ))}
           </div>

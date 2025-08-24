@@ -35,7 +35,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         const formData = new FormData();
         formData.append('images', file);
 
-        const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/${type === 'product' ? 'admin/products' : 'reviews'}`, {
+        const response = await fetch(`${API_URL}/api/${type === 'product' ? 'admin/products' : 'reviews'}`, {
           method: 'POST',
           body: formData,
           headers: {

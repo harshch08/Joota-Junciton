@@ -27,7 +27,7 @@ const AdminUsers: React.FC = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/admin/users`, {
+      const response = await fetch(`${API_URL}/api/admin/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -47,7 +47,7 @@ const AdminUsers: React.FC = () => {
   const handleDeleteUser = async (userId: string) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/admin/users/${userId}`, {
+      const response = await fetch(`${API_URL}/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -67,7 +67,7 @@ const AdminUsers: React.FC = () => {
   const updateUserRole = async (userId: string, role: string) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/admin/users/${userId}/role`, {
+      const response = await fetch(`${API_URL}/api/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

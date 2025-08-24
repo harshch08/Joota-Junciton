@@ -39,7 +39,7 @@ const FeaturedProductCard: React.FC<FeaturedProductCardProps> = ({ product, onPr
     if (user) {
       try {
         // Check stock availability
-        const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/products/${product._id}`);
+        const response = await fetch(`${API_URL}/api/products/${product._id}`);
         if (response.ok) {
           const productData = await response.json();
           const sizeObj = productData.sizes?.find((s: any) => s.size === size);
@@ -58,6 +58,7 @@ const FeaturedProductCard: React.FC<FeaturedProductCardProps> = ({ product, onPr
             id: product._id,
             name: product.name,
             price: product.price,
+            discountedPrice: product.discountedPrice,
             image: product.images[0],
             size: size.toString(),
             brand: product.brand,

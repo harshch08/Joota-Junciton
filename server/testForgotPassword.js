@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const API_BASE_URL = process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com';
+const API_BASE_URL = process.env.VITE_API_URL;
 
 // Test email - replace with a real email for testing
 const TEST_EMAIL = 'test@example.com';

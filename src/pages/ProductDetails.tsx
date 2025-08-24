@@ -44,7 +44,7 @@ const ProductDetails: React.FC = () => {
   const { data: reviews = [], isLoading: reviewsLoading, refetch: refetchReviews } = useQuery({
     queryKey: ['reviews', productId],
     queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/reviews/product/${productId}`);
+      const response = await fetch(`${API_URL}/api/reviews/product/${productId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch reviews');
       }
@@ -89,6 +89,7 @@ const ProductDetails: React.FC = () => {
         id: product._id,
         name: product.name,
         price: product.price,
+        discountedPrice: product.discountedPrice,
         image: product.images[selectedImage] || product.images[0],
         size: selectedSize,
         brand: product.brand
@@ -216,7 +217,7 @@ const ProductDetails: React.FC = () => {
             isOwner={user?._id === review.user._id}
             onDelete={async () => {
               try {
-                const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/reviews/${review._id}`, {
+                const response = await fetch(`${API_URL}/api/reviews/${review._id}`, {
                   method: 'DELETE',
                   headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`

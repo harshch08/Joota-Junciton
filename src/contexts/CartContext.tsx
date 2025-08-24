@@ -41,7 +41,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const cartItems = response.cart.map((item: any) => {
               const imageUrl = item.productId.images[0];
               const processedImage = imageUrl.startsWith('/uploads/products')
-                ? `${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}${imageUrl}`
+                ? `${API_URL}${imageUrl}`
                 : imageUrl;
 
               return {
@@ -125,7 +125,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Process image URL
       const processedImage = item.image.startsWith('/uploads/products') 
-        ? `${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}${item.image}`
+        ? `${API_URL}${item.image}`
         : item.image;
 
       let updatedItems;

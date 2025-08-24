@@ -51,7 +51,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         onClose();
       } else {
         // Generate OTP for registration
-        const response = await fetch(`${process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com'}/api/auth/generate-otp`, {
+        const response = await fetch(`${API_URL}/api/auth/generate-otp`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

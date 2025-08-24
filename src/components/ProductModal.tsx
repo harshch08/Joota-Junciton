@@ -61,6 +61,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onClose, o
       id: productId,
       name: product.name,
       price: product.price,
+      discountedPrice: product.discountedPrice,
       image: product.images[0],
       size: selectedSize.toString(),
       brand: product.brand,

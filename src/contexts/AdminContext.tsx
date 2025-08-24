@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { API_URL } from '../config';
 
 interface AdminUser {
   id: string;
@@ -72,7 +73,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
-      const response = await fetch(process.env.VITE_API_URL || 'https://jjunction-backend-55hr.onrender.com/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
