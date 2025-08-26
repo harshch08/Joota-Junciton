@@ -162,6 +162,7 @@ const Index = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading products...</p>
+          <p className="mt-1 text-gray-500 text-sm">Please wait a few sec, the server might be starting.</p>
         </div>
       </div>
     );
