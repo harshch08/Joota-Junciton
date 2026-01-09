@@ -136,6 +136,7 @@ mongoose.connection.on('reconnected', () => {
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const newAuthRoutes = require('./routes/newAuth');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const adminRoutes = require('./routes/admin');
@@ -145,6 +146,7 @@ const reviewsRouter = require('./routes/reviews');
 
 // Mount routes
 app.use('/api/auth', authRoutes);
+app.use('/api/v2/auth', newAuthRoutes); // New improved OTP system
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
