@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const Otp = require('../models/Otp');
-const { sendOtpEmail, sendForgotPasswordEmail } = require('../services/emailService');
+const { sendOTPEmail, generateSecureOTP } = require('../services/newEmailService');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
@@ -78,69 +78,56 @@ const login = async (req, res) => {
 const generateOtp = async (req, res) => {
   try {
     const { email } = req.body;
-    console.log('Generate OTP request received:', { email });
-    console.log('Email type:', typeof email);
-    console.log('Email value:', JSON.stringify(email));
-    console.log('Request body:', JSON.stringify(req.body));
+    console.log('🚀 Generate OTP request received:', { email });
 
     // Check if email exists and is not empty
     if (!email) {
-      console.log('Email is missing or empty');
+      console.log('❌ Email is missing or empty');
       return res.status(400).json({ message: 'Email is required' });
     }
 
     // Normalize email (trim and lowercase)
     const normalizedEmail = email.trim().toLowerCase();
-    console.log('Normalized email:', normalizedEmail);
+    console.log('📧 Normalized email:', normalizedEmail);
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    console.log('Testing email against regex:', emailRegex.test(normalizedEmail));
     if (!emailRegex.test(normalizedEmail)) {
-      console.log('Invalid email format:', normalizedEmail);
-      console.log('Email length:', normalizedEmail.length);
-      console.log('Email characters:', normalizedEmail.split('').map(c => `${c}(${c.charCodeAt(0)})`));
+      console.log('❌ Invalid email format:', normalizedEmail);
       return res.status(400).json({ message: 'Invalid email format' });
     }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
-      console.log('User already exists:', email);
+      console.log('❌ User already exists:', normalizedEmail);
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log('Generated OTP for:', email);
+    // Generate secure OTP using new service
+    const otp = generateSecureOTP();
+    console.log('🔑 Generated secure OTP for:', normalizedEmail);
 
-    try {
-      // Delete any existing OTP for this email
-      await Otp.deleteOne({ email });
-      console.log('Deleted existing OTP for:', email);
+    // Delete any existing OTP for this email
+    await Otp.deleteOne({ email: normalizedEmail });
+    console.log('🗑️ Deleted existing OTP for:', normalizedEmail);
 
-      // Save new OTP
-      const otpRecord = await Otp.create({ email, otp });
-      console.log('Saved new OTP record:', { email, otpId: otpRecord._id });
+    // Save new OTP
+    const otpRecord = await Otp.create({ email: normalizedEmail, otp });
+    console.log('💾 Saved new OTP record:', { email: normalizedEmail, otpId: otpRecord._id });
 
-      // Send OTP via email
-      await sendOtpEmail(email, otp);
-      console.log('OTP email sent successfully to:', email);
+    // Send OTP via new email service
+    const emailResult = await sendOTPEmail(normalizedEmail, otp, 'registration');
+    console.log('✅ OTP email sent successfully to:', normalizedEmail);
 
-      res.status(200).json({ 
-        message: 'OTP sent successfully',
-        email: email
-      });
-    } catch (dbError) {
-      console.error('Database operation failed:', dbError);
-      throw new Error('Failed to save or send OTP');
-    }
-  } catch (error) {
-    console.error('Error in generateOtp:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+    res.status(200).json({ 
+      message: 'OTP sent successfully',
+      email: normalizedEmail,
+      messageId: emailResult.messageId
     });
+
+  } catch (error) {
+    console.error('❌ Error in generateOtp:', error);
     res.status(500).json({ 
       message: 'Failed to generate OTP',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
@@ -248,14 +235,14 @@ const generateForgotPasswordOtp = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log('Generated forgot password OTP for:', email);
+    // Generate secure OTP using new service
+    const otp = generateSecureOTP();
+    console.log('🔑 Generated secure forgot password OTP for:', email);
 
     try {
       // Delete any existing forgot password OTP for this email
       await Otp.deleteOne({ email, type: 'forgot-password' });
-      console.log('Deleted existing forgot password OTP for:', email);
+      console.log('🗑️ Deleted existing forgot password OTP for:', email);
 
       // Save new OTP
       const otpRecord = await Otp.create({ 
@@ -263,15 +250,16 @@ const generateForgotPasswordOtp = async (req, res) => {
         otp, 
         type: 'forgot-password' 
       });
-      console.log('Saved new forgot password OTP record:', { email, otpId: otpRecord._id });
+      console.log('💾 Saved new forgot password OTP record:', { email, otpId: otpRecord._id });
 
-      // Send OTP via email
-      await sendForgotPasswordEmail(email, otp);
-      console.log('Forgot password OTP email sent successfully to:', email);
+      // Send OTP via new email service
+      const emailResult = await sendOTPEmail(email, otp, 'forgot-password');
+      console.log('✅ Forgot password OTP email sent successfully to:', email);
 
       res.status(200).json({ 
         message: 'OTP sent successfully',
-        success: true
+        success: true,
+        messageId: emailResult.messageId
       });
     } catch (dbError) {
       console.error('Database operation failed:', dbError);
