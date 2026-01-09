@@ -2,10 +2,19 @@ const nodemailer = require('nodemailer');
 
 // Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD
+  },
+  timeout: 30000, // 30 seconds timeout
+  connectionTimeout: 30000, // 30 seconds connection timeout
+  greetingTimeout: 30000, // 30 seconds greeting timeout
+  socketTimeout: 30000, // 30 seconds socket timeout
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
@@ -13,18 +22,20 @@ const transporter = nodemailer.createTransport({
 transporter.verify(function (error, success) {
   if (error) {
     console.error('SMTP configuration error:', error);
+    console.error('Email User:', process.env.EMAIL_USER);
+    console.error('Email Password length:', process.env.EMAIL_PASSWORD?.length);
   } else {
     console.log('SMTP server is ready to send emails');
   }
 });
 
-const sendOtpEmail = async (recipientEmail, otp) => {
+const sendOtpEmail = async (recipientEmail, otp, retries = 3) => {
   const mailOptions = {
     from: {
       name: 'Joota Junction',
-      address: process.env.EMAIL_USER // This should be your configured sender email
+      address: process.env.EMAIL_USER
     },
-    to: recipientEmail, // The user's email where they want to register
+    to: recipientEmail,
     subject: 'Your OTP for Joota Junction Registration',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
@@ -45,13 +56,30 @@ const sendOtpEmail = async (recipientEmail, otp) => {
     `
   };
 
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info.messageId);
-    return true;
-  } catch (error) {
-    console.error('Error sending email:', error);
-    throw new Error('Failed to send OTP email');
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Attempting to send OTP email to: ${recipientEmail} (Attempt ${attempt}/${retries})`);
+      console.log('Using email service:', process.env.EMAIL_USER);
+      
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', info.messageId);
+      return true;
+    } catch (error) {
+      console.error(`Email attempt ${attempt} failed:`, error.message);
+      
+      if (attempt === retries) {
+        console.error('All email attempts failed. Final error:', {
+          code: error.code,
+          command: error.command,
+          response: error.response,
+          responseCode: error.responseCode
+        });
+        throw new Error('Failed to send OTP email after multiple attempts');
+      }
+      
+      // Wait 2 seconds before retry
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
 };
 
