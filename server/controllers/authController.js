@@ -79,16 +79,32 @@ const generateOtp = async (req, res) => {
   try {
     const { email } = req.body;
     console.log('Generate OTP request received:', { email });
+    console.log('Email type:', typeof email);
+    console.log('Email value:', JSON.stringify(email));
+    console.log('Request body:', JSON.stringify(req.body));
+
+    // Check if email exists and is not empty
+    if (!email) {
+      console.log('Email is missing or empty');
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Normalize email (trim and lowercase)
+    const normalizedEmail = email.trim().toLowerCase();
+    console.log('Normalized email:', normalizedEmail);
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.log('Invalid email format:', email);
+    console.log('Testing email against regex:', emailRegex.test(normalizedEmail));
+    if (!emailRegex.test(normalizedEmail)) {
+      console.log('Invalid email format:', normalizedEmail);
+      console.log('Email length:', normalizedEmail.length);
+      console.log('Email characters:', normalizedEmail.split('').map(c => `${c}(${c.charCodeAt(0)})`));
       return res.status(400).json({ message: 'Invalid email format' });
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       console.log('User already exists:', email);
       return res.status(400).json({ message: 'User already exists' });
