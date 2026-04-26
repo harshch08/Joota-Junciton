@@ -12,9 +12,8 @@ interface ForgotPasswordProps {
 }
 
 const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) => {
-  const [step, setStep] = useState<'email' | 'otp' | 'password'>('email');
+  const [step, setStep] = useState<'email' | 'password'>('email');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -28,55 +27,23 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+      // Check if user exists
+      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, checkOnly: true }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to send OTP');
+        throw new Error(data.message || 'User not found');
       }
 
-      toast.success('OTP sent to your email!');
-      setStep('otp');
-    } catch (err: any) {
-      setError(err.message || 'Failed to send OTP');
-      toast.error(err.message || 'Failed to send OTP');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(`${API_URL}/api/auth/verify-forgot-password-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, otp }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Invalid OTP');
-      }
-
-      toast.success('OTP verified successfully!');
       setStep('password');
     } catch (err: any) {
-      setError(err.message || 'Invalid OTP');
-      toast.error(err.message || 'Invalid OTP');
+      setError(err.message || 'Failed to verify email');
+      toast.error(err.message || 'Failed to verify email');
     } finally {
       setIsLoading(false);
     }
@@ -88,13 +55,11 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
 
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match');
-      toast.error('Passwords do not match');
       return;
     }
 
     if (newPassword.length < 6) {
       setError('Password must be at least 6 characters long');
-      toast.error('Password must be at least 6 characters long');
       return;
     }
 
@@ -103,10 +68,8 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
     try {
       const response = await fetch(`${API_URL}/api/auth/reset-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, otp, newPassword }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, newPassword }),
       });
 
       const data = await response.json();
@@ -125,30 +88,16 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
     }
   };
 
-  const handleBack = () => {
-    if (step === 'otp') {
-      setStep('email');
-      setOtp('');
-    } else if (step === 'password') {
-      setStep('otp');
-      setNewPassword('');
-      setConfirmPassword('');
-    }
-    setError('');
-  };
-
   return (
     <div className="space-y-4">
       <div className="text-center">
         <h2 className="text-2xl font-bold">
-          {step === 'email' && 'Forgot Password'}
-          {step === 'otp' && 'Verify OTP'}
-          {step === 'password' && 'Reset Password'}
+          {step === 'email' ? 'Forgot Password' : 'Reset Password'}
         </h2>
         <p className="text-muted-foreground mt-2">
-          {step === 'email' && 'Enter your email to receive a reset code'}
-          {step === 'otp' && `We've sent a 6-digit code to ${email}`}
-          {step === 'password' && 'Enter your new password'}
+          {step === 'email'
+            ? 'Enter your email address to reset your password'
+            : 'Enter your new password'}
         </p>
       </div>
 
@@ -172,51 +121,11 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
           {error && <p className="text-sm text-red-500">{error}</p>}
           <div className="flex flex-col gap-2">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Sending OTP...' : 'Send OTP'}
+              {isLoading ? 'Verifying...' : 'Continue'}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={onBack}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" className="w-full" onClick={onBack} disabled={isLoading}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Login
-            </Button>
-          </div>
-        </form>
-      )}
-
-      {step === 'otp' && (
-        <form onSubmit={handleOtpSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="forgot-otp">Enter OTP</Label>
-            <Input
-              id="forgot-otp"
-              type="text"
-              placeholder="Enter 6-digit code"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              maxLength={6}
-              pattern="[0-9]{6}"
-              required
-            />
-          </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <div className="flex flex-col gap-2">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Verifying...' : 'Verify OTP'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleBack}
-              disabled={isLoading}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
             </Button>
           </div>
         </form>
@@ -237,11 +146,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
                 className="pl-10 pr-10"
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              >
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
               </button>
             </div>
@@ -260,29 +165,19 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
                 className="pl-10 pr-10"
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              >
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 {showConfirmPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
               </button>
             </div>
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
-          
+
           <div className="flex flex-col gap-2">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Resetting Password...' : 'Reset Password'}
+              {isLoading ? 'Resetting...' : 'Reset Password'}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleBack}
-              disabled={isLoading}
-            >
+            <Button type="button" variant="outline" className="w-full" onClick={() => setStep('email')} disabled={isLoading}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
@@ -293,4 +188,4 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onComplete }) =
   );
 };
 
-export default ForgotPassword; 
+export default ForgotPassword;

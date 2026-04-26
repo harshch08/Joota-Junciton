@@ -7,7 +7,6 @@ import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Separator } from './ui/separator';
 import { toast } from 'sonner';
-import OtpVerification from './OtpVerification';
 import ForgotPassword from './ForgotPassword';
 import { API_URL } from '../config';
 
@@ -23,13 +22,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showOtpVerification, setShowOtpVerification] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login, register } = useAuth();
 
   useEffect(() => {
     if (!isOpen) {
-      setShowOtpVerification(false);
       setShowForgotPassword(false);
       setIsLogin(true);
       setEmail('');
@@ -50,23 +47,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         toast.success(`Welcome back, ${userData.name}!`);
         onClose();
       } else {
-        // Generate OTP for registration
-        const response = await fetch(`${API_URL}/api/auth/generate-otp`, {
+        // Direct registration without OTP
+        const response = await fetch(`${API_URL}/api/auth/register`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password }),
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.message || 'Failed to generate OTP');
+          throw new Error(data.message || 'Registration failed');
         }
 
-        toast.success('OTP sent to your email!');
-        setShowOtpVerification(true);
+        // Auto login after registration
+        login(data.user, data.token);
+        toast.success('Account created successfully!');
+        onClose();
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed');
@@ -79,17 +76,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const handleTabChange = (value: string) => {
     setIsLogin(value === 'login');
     setError('');
-    setShowOtpVerification(false);
     setShowForgotPassword(false);
-  };
-
-  const handleVerificationComplete = () => {
-    onClose();
-    toast.success('Registration successful!');
-  };
-
-  const handleBack = () => {
-    setShowOtpVerification(false);
   };
 
   const handleForgotPasswordComplete = () => {
@@ -115,15 +102,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </DialogHeader>
         )}
 
-        {showOtpVerification ? (
-          <OtpVerification
-            email={email}
-            password={password}
-            name={name}
-            onVerificationComplete={handleVerificationComplete}
-            onBack={handleBack}
-          />
-        ) : showForgotPassword ? (
+        {showForgotPassword ? (
           <ForgotPassword
             onBack={handleForgotPasswordBack}
             onComplete={handleForgotPasswordComplete}
