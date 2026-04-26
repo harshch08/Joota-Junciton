@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { protect } = require('../middleware/auth');
@@ -196,16 +197,64 @@ router.put('/:id/status', protect, async (req, res) => {
 // Create Razorpay order endpoint
 router.post('/create-razorpay-order', async (req, res) => {
   const { amount, currency = 'INR', receipt } = req.body;
+
+  // Validate amount (minimum 100 paise = ₹1)
+  const amountInPaise = Math.round(amount * 100);
+  if (!amount || amountInPaise < 100) {
+    return res.status(400).json({ error: 'Amount must be at least ₹1 (100 paise)' });
+  }
+
   try {
     const options = {
-      amount: Math.round(amount * 100), // amount in paise
+      amount: amountInPaise,
       currency,
-      receipt: receipt || `order_rcptid_${Date.now()}`,
+      receipt: receipt || `rcpt_${Date.now()}`,
     };
     const order = await razorpay.orders.create(options);
     res.json(order);
   } catch (err) {
+    console.error('Razorpay create order error:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Verify Razorpay payment signature
+router.post('/verify-payment', async (req, res) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+  // Validate required fields
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Missing required payment fields' 
+    });
+  }
+
+  try {
+    // Generate expected signature using HMAC-SHA256
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest('hex');
+
+    // Compare signatures
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Payment signature verification failed' 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Payment verified successfully',
+      paymentId: razorpay_payment_id,
+      orderId: razorpay_order_id
+    });
+  } catch (err) {
+    console.error('Payment verification error:', err);
+    res.status(500).json({ success: false, message: 'Payment verification failed' });
   }
 });
 

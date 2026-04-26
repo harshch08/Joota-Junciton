@@ -270,7 +270,32 @@ const Checkout = () => {
 
   const handleSubmitRazorpayOrder = async (razorpayResponse: any, codMode = false) => {
     try {
-      // Prepare order data for API
+      // Step 1: Verify payment signature (skip for COD advance payment if needed)
+      if (!codMode) {
+        const verifyRes = await fetch(`${API_URL}/api/orders/verify-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            razorpay_order_id: razorpayResponse.razorpay_order_id,
+            razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+            razorpay_signature: razorpayResponse.razorpay_signature,
+          })
+        });
+
+        const verifyData = await verifyRes.json();
+
+        if (!verifyRes.ok || !verifyData.success) {
+          setError('Payment verification failed. Please contact support.');
+          setIsProcessing(false);
+          navigate('/order-fail');
+          return;
+        }
+      }
+
+      // Step 2: Save order to database
       const orderData = {
         items: items.map(item => ({
           product: item.id,
