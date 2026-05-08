@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { adminProtect } = require('../middleware/admin');
 const { protect, admin } = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
+const descriptionGeneratorService = require('../services/descriptionGeneratorService');
+const visualSearchService = require('../services/visualSearchService');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Product = require('../models/Product');
@@ -10,6 +13,8 @@ const Category = require('../models/Category');
 const Brand = require('../models/Brand');
 const StoreSettings = require('../models/StoreSettings');
 const { productUpload } = require('../config/cloudinary');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10_485_760 } });
 
 // Admin Dashboard Statistics
 router.get('/dashboard', protect, admin, async (req, res) => {
@@ -226,6 +231,10 @@ router.post('/products', protect, admin, productUpload.array('images', 5), async
       sizes: formattedSizes
     });
 
+    // Fire-and-forget: index product for visual search
+    visualSearchService.indexProduct(product._id, product.images)
+      .catch(err => console.error('Index error on create:', err));
+
     res.status(201).json(product);
   } catch (error) {
     console.error('Create product error:', error);
@@ -284,6 +293,12 @@ router.put('/products/:id', protect, admin, productUpload.array('images', 5), as
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Fire-and-forget: re-index if images were updated
+    if (req.files && req.files.length > 0) {
+      visualSearchService.indexProduct(product._id, product.images)
+        .catch(err => console.error('Index error on update:', err));
+    }
+
     res.json(product);
   } catch (error) {
     console.error('Update product error:', error);
@@ -328,6 +343,10 @@ router.delete('/products/:id', adminProtect, async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
+    // Fire-and-forget: remove from visual search index
+    visualSearchService.removeProduct(req.params.id)
+      .catch(err => console.error('Remove index error on delete:', err));
 
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
@@ -984,6 +1003,110 @@ router.delete('/brands/:id', adminProtect, async (req, res) => {
       message: 'Error deleting brand',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+});
+
+// Helper: generate product description by searching the web for the product
+async function generateDescriptionFromSearch(name, brand, category) {
+  const fetch = (await import('node-fetch')).default;
+
+  // Build search query
+  const query = [brand, name, category, 'shoe', 'description'].filter(Boolean).join(' ');
+  const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+
+  const html = await fetch(searchUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      'Accept': 'text/html',
+    },
+    timeout: 8000,
+  }).then(r => r.text());
+
+  // Extract snippets from DuckDuckGo results
+  const snippetRegex = /<a class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+  const snippets = [];
+  let match;
+  while ((match = snippetRegex.exec(html)) !== null && snippets.length < 5) {
+    const text = match[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+    if (text.length > 40) snippets.push(text);
+  }
+
+  if (snippets.length === 0) {
+    // Fallback: generate a template description from the product info
+    const productName = name || 'This shoe';
+    const productBrand = brand ? `by ${brand}` : '';
+    const productCategory = category || 'footwear';
+    return `${productName} ${productBrand} is a premium ${productCategory} designed for comfort and style. Crafted with high-quality materials, it offers excellent durability and a modern aesthetic. Whether you're heading to the gym, office, or a casual outing, this shoe delivers the perfect blend of performance and fashion. The ergonomic design ensures all-day comfort while the sleek silhouette keeps you looking sharp. Available in multiple sizes to find your perfect fit.`;
+  }
+
+  // Combine snippets into a coherent description
+  const combined = snippets.join(' ').replace(/\s+/g, ' ').trim();
+  // Trim to a reasonable length
+  const words = combined.split(' ');
+  const trimmed = words.slice(0, 120).join(' ');
+  return trimmed.length > 0 ? trimmed : snippets[0];
+}
+
+// AI: Generate product description from image
+const descRateLimiter = rateLimit({
+  windowMs: parseInt(process.env.DESC_RATE_LIMIT_WINDOW_MS || '3600000', 10),
+  max: parseInt(process.env.DESC_RATE_LIMIT_MAX || '50', 10),
+  keyGenerator: (req) => req.user ? String(req.user._id || req.user.id) : req.ip,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const resetTime = new Date(Date.now() + req.rateLimit.resetTime).toISOString();
+    res.status(429).json({
+      error: `Description generation limit reached. Try again after ${resetTime}.`,
+    });
+  },
+});
+
+router.post('/generate-description', protect, admin, descRateLimiter, async (req, res) => {
+  const { imageUrl, name, brand, category } = req.body;
+  if (!imageUrl && !name) {
+    return res.status(400).json({ error: 'An image URL or product name is required.' });
+  }
+  try {
+    const description = await generateDescriptionFromSearch(name, brand, category);
+    return res.json({ description });
+  } catch (err) {
+    const status = err.status || 502;
+    return res.status(status).json({ error: err.message || 'Description generation failed. Please try again or write a description manually.' });
+  }
+});
+
+// AI: Rebuild visual search index (admin only)
+router.post('/visual-search/rebuild-index', protect, admin, async (req, res) => {
+  try {
+    const result = await visualSearchService.rebuildIndex();
+    return res.json(result);
+  } catch (err) {
+    console.error('Rebuild index error:', err);
+    return res.status(500).json({ error: 'Failed to rebuild visual search index.' });
+  }
+});
+
+// AI: Generate product description from uploaded image file (for new products before Cloudinary upload)
+router.post('/generate-description-from-file', protect, admin, descRateLimiter, (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File too large. Maximum size is 10 MB.' });
+      }
+      return res.status(400).json({ error: 'Unsupported format. Upload a JPEG, PNG, or WebP image.' });
+    }
+    if (err) return next(err);
+    next();
+  });
+}, async (req, res) => {
+  const { name, brand, category } = req.body;
+  try {
+    const description = await generateDescriptionFromSearch(name, brand, category);
+    return res.json({ description });
+  } catch (err) {
+    console.error('Generate description from file error:', err);
+    return res.status(502).json({ error: 'Description generation failed. Please try again or write a description manually.' });
   }
 });
 

@@ -142,6 +142,8 @@ const adminRoutes = require('./routes/admin');
 const categoryRoutes = require('./routes/categories');
 const brandRoutes = require('./routes/brands');
 const reviewsRouter = require('./routes/reviews');
+const visualSearchRoutes = require('./routes/visualSearch');
+const assistantRouter = require('./routes/assistant');
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -151,6 +153,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api', visualSearchRoutes);
+app.use('/api/assistant', assistantRouter);
 app.use('/uploads/reviews', express.static('uploads/reviews'));
 app.use('/uploads/products', express.static('uploads/products'));
 

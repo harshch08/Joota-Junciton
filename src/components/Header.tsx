@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, Search, User, Menu, X, Settings, LogOut, Package } from 'lucide-react';
+import { ShoppingCart, Search, User, Menu, X, Settings, LogOut, Package, Camera } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useAdmin } from '../contexts/AdminContext';
@@ -9,6 +9,7 @@ import { brandsAPI, productsAPI } from '../services/api';
 import { Brand, Product } from '../types';
 import AuthModal from './AuthModal';
 import CartSidebar from './CartSidebar';
+import VisualSearchModal from './VisualSearchModal';
 import AnnouncementBar from './AnnouncementBar';
 import { useDebounce } from '../hooks/useDebounce';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ const Header: React.FC<HeaderProps> = ({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showVisualSearch, setShowVisualSearch] = useState(false);
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const { data: brands = [], isLoading: brandsLoading } = useQuery<Brand[]>({
@@ -191,9 +193,17 @@ const Header: React.FC<HeaderProps> = ({
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
                 <button
+                  type="button"
+                  onClick={() => setShowVisualSearch(true)}
+                  title="Search by image"
+                  className="ml-2 p-3 rounded-full border-2 border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-all duration-200 bg-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                >
+                  <Camera className="h-5 w-5" />
+                </button>
+                <button
                   type="submit"
                   onClick={handleSearchClick}
-                  className="ml-3 bg-black text-white px-6 py-3.5 rounded-full hover:bg-gray-800 transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                  className="ml-2 bg-black text-white px-6 py-3.5 rounded-full hover:bg-gray-800 transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
                 >
                   Search
                 </button>
@@ -362,11 +372,19 @@ const Header: React.FC<HeaderProps> = ({
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
                 <button
+                  type="button"
+                  onClick={() => { setShowVisualSearch(true); if (setShowMobileSearch) setShowMobileSearch(false); }}
+                  title="Search by image"
+                  className="ml-2 p-3 rounded-full border-2 border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-all duration-200 bg-white shadow-sm focus:outline-none"
+                >
+                  <Camera className="h-5 w-5" />
+                </button>
+                <button
                   type="submit"
                   onClick={handleSearchClick}
-                  className="ml-3 bg-black text-white px-5 py-3.5 rounded-full hover:bg-gray-800 transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                  className="ml-2 bg-black text-white p-3.5 rounded-full hover:bg-gray-800 transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
                 >
-                  Search
+                  <Search className="h-5 w-5" />
                 </button>
 
                 {/* Mobile Search Suggestions */}
@@ -521,6 +539,7 @@ const Header: React.FC<HeaderProps> = ({
 
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       <CartSidebar isOpen={showCart} onClose={() => setShowCart(false)} />
+      <VisualSearchModal isOpen={showVisualSearch} onClose={() => setShowVisualSearch(false)} />
     </>
   );
 };

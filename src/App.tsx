@@ -24,6 +24,8 @@ import AdminOrders from './pages/AdminOrders';
 import AdminUsers from './pages/AdminUsers';
 import BottomNav from './components/BottomNav';
 import Header from './components/Header';
+import AssistantButton from './components/AssistantButton';
+import AssistantPanel from './components/AssistantPanel';
 import ProductDetails from './pages/ProductDetails';
 import BrandProductsPage from './pages/BrandProductsPage';
 import CartSidebar from './components/CartSidebar';
@@ -51,6 +53,7 @@ const AppContent = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCart, setShowCart] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   
@@ -157,13 +160,17 @@ const AppContent = () => {
         {!isAdminRoute && <Footer />}
       </div>
       {!isAdminRoute && (
-        <BottomNav 
-          onSearchClick={toggleSearch}
-          showSearch={showSearch}
-          onAuthClick={() => setShowAuthModal(true)}
-          onCartClick={toggleCart}
-          onCloseCart={closeCart}
-        />
+        <>
+          <BottomNav 
+            onSearchClick={toggleSearch}
+            showSearch={showSearch}
+            onAuthClick={() => setShowAuthModal(true)}
+            onCartClick={toggleCart}
+            onCloseCart={closeCart}
+          />
+          <AssistantButton onClick={() => setShowAssistant(true)} />
+          <AssistantPanel isOpen={showAssistant} onClose={() => setShowAssistant(false)} />
+        </>
       )}
     </div>
   );

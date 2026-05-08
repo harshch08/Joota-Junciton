@@ -283,6 +283,7 @@ const AdminDashboard: React.FC = () => {
   const [inventoryUpdates, setInventoryUpdates] = useState<{[key: number]: number}>({});
   const [localInventory, setLocalInventory] = useState<{[key: number]: number}>({});
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [showBrandForm, setShowBrandForm] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
@@ -769,6 +770,72 @@ const AdminDashboard: React.FC = () => {
       sizes: '',
       description: '',
     });
+  };
+
+  const handleGenerateDescription = async () => {
+    // Determine image source: editing product has Cloudinary URL, new product has local file
+    let imageUrl: string | null = null;
+
+    if (editingProduct && editingProduct.images && editingProduct.images.length > 0) {
+      imageUrl = editingProduct.images[0];
+    } else if (newProduct.images && newProduct.images.length > 0) {
+      // For new products, upload the image file to get a description
+      // We'll send the file directly to the generate-description endpoint
+      const token = localStorage.getItem('adminToken');
+      setIsGeneratingDescription(true);
+      try {
+        const formData = new FormData();
+        formData.append('image', newProduct.images[0]);
+        formData.append('name', newProduct.name || '');
+        formData.append('brand', newProduct.brand || '');
+        formData.append('category', newProduct.category || '');
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/generate-description-from-file`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData,
+        });
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || 'Description generation failed.');
+        }
+        const data = await response.json();
+        setNewProduct(prev => ({ ...prev, description: data.description }));
+        toast({ title: 'Description generated', description: 'Review and edit before saving.' });
+      } catch (err: any) {
+        toast({ title: 'Error', description: err.message || 'Failed to generate description.', variant: 'destructive' });
+      } finally {
+        setIsGeneratingDescription(false);
+      }
+      return;
+    } else {
+      toast({ title: 'No image', description: 'Upload a product image first to generate a description.', variant: 'destructive' });
+      return;
+    }
+
+    // For editing: use Cloudinary URL
+    const token = localStorage.getItem('adminToken');
+    setIsGeneratingDescription(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/generate-description`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageUrl, name: newProduct.name, brand: newProduct.brand, category: newProduct.category }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Description generation failed.');
+      }
+      const data = await response.json();
+      setNewProduct(prev => ({ ...prev, description: data.description }));
+      toast({ title: 'Description generated', description: 'Review and edit before saving.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to generate description.', variant: 'destructive' });
+    } finally {
+      setIsGeneratingDescription(false);
+    }
   };
 
   const handleDeleteProduct = async (productId: string) => {
@@ -2654,11 +2721,37 @@ const AdminDashboard: React.FC = () => {
               value={newProduct.sizes}
               onChange={(e) => setNewProduct({...newProduct, sizes: e.target.value})}
             />
-            <Input
-              placeholder="Description"
-              value={newProduct.description}
-              onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-            />
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="product-description">Description</Label>
+                <button
+                  type="button"
+                  onClick={handleGenerateDescription}
+                  disabled={isGeneratingDescription || (!newProduct.images?.length && !(editingProduct?.images && editingProduct.images.length > 0))}
+                  title={(!newProduct.images?.length && !(editingProduct?.images && editingProduct.images.length > 0)) ? 'Upload a product image first' : 'Generate description using AI'}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isGeneratingDescription ? (
+                    <>
+                      <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating…
+                    </>
+                  ) : (
+                    <>✨ Generate Description</>
+                  )}
+                </button>
+              </div>
+              <Textarea
+                id="product-description"
+                placeholder="Description"
+                value={newProduct.description}
+                onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                rows={4}
+              />
+            </div>
           </div>
           <DialogFooter className="mt-4">
             {editingProduct ? (
